@@ -13,11 +13,18 @@ type SphinxConfig struct {
 		User string
 }
 
+type ArangoConfig struct {
+	Endpoints []string
+	User string
+	Password string
+}
+
 type LogsConfig struct {
 	Network string
 	Whitelist []string // for whitelisting specific channels
 	Sphinx SphinxConfig
 	Queues map[string]int
+	Arango ArangoConfig
 }
 
 var cachedFile = ""
@@ -32,7 +39,8 @@ func GetConfByName(filename string) LogsConfig {
 		return cache
 	}
 	var conf = config.NewConfig()
-	conf.Load(envvar.NewSource(), flag.NewSource(), file.NewSource(file.WithPath("./default_config.json")), file.NewSource(file.WithPath(filename)))
+	conf.Load(file.NewSource(file.WithPath(filename)))
+	conf.Load(envvar.NewSource(), flag.NewSource(), file.NewSource(file.WithPath("./default_config.json")))
 	var confObj = LogsConfig{}
 	conf.Get().Scan(&confObj)
 	cachedFile = filename

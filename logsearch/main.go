@@ -15,7 +15,11 @@ func main() {
 
 	// Create a line parser
 	parser := logs.LineParser{In: collector.Out, Out: make(chan logs.Line, 10000)}
-	parser.ParseLinesForever()
+	go parser.ParseLinesForever()
+
+	// Create an ID parser
+	id := logs.IdFeed{In: parser.Out}
+	id.QueryIdsForever()
 	//if e != nil {
 	//	fmt.Printf("Error: %s\n", e)
 	//}
