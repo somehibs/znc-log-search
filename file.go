@@ -21,16 +21,23 @@ func CustomZncPath(path string) error {
 	return nil
 }
 
-func UserNetworkZncPath(network string) error {
+func ZncPath(network string) error {
 	u, e := user.Current()
 	if e != nil {
 		return e
 	}
-	zncPath = fmt.Sprintf("/home/%s/.znc/users/*/networks/%s/moddata/log/", u.Username, network)
-	fmt.Println(zncPath)
+	zncPath = fmt.Sprintf("/home/%s/.znc/users/*/networks/%s/moddata/log/%%s/", u.Username, network)
 	return nil
 }
 
-func GetLogsForDay(day time.Time) chan string {
+func GetLogsForDay(reply chan string, day time.Time) chan string {
+	return GetLogsForChan(reply, day, "")
+}
+
+func GetLogsForChan(reply chan string, day time.Time, oneChan string) chan string {
+	if oneChan == "" {
+		oneChan = "*"
+	}
+	//path := fmt.Sprintf(zncPath, oneChan)
 	return make(chan string)
 }

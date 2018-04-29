@@ -1,1 +1,1 @@
-{"network": "mynetwork", "sphinx": {"host":"127.0.0.1", "port": 9999, "user": "irc"}}
+{"queues": {"file": 100}, "network": "mynetwork", "sphinx": {"host":"127.0.0.1", "port": 9999, "user": "irc"}}

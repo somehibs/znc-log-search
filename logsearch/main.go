@@ -6,6 +6,13 @@ import (
 )
 
 func main() {
+	// Global config
 	conf := logs.GetConf()
-	fmt.Println(logs.UserNetworkZncPath(conf.Network))
+
+	// Configure path searcher
+	err := logs.ZncPath(conf.Network)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }

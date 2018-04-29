@@ -18,14 +18,22 @@ type LogsConfig struct {
 	Sphinx SphinxConfig
 }
 
+var cachedFile = ""
+var cache = LogsConfig{Network: "_not_a_real_network_probably"}
+
 func GetConf() LogsConfig {
 	return GetConfByName("./config.json")
 }
 
 func GetConfByName(filename string) LogsConfig {
+	if cachedFile == filename {
+		return cache
+	}
 	var conf = config.NewConfig()
-	conf.Load(envvar.NewSource(), flag.NewSource(), file.NewSource(file.WithPath(filename)))
+	conf.Load(envvar.NewSource(), flag.NewSource(), file.NewSource(file.WithPath(filename)), file.NewSource(file.WithPath("./default_config.json")))
 	var confObj = LogsConfig{}
 	conf.Get().Scan(&confObj)
+	cachedFile = filename
+	cache = confObj
 	return confObj
 }
