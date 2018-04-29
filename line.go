@@ -3,6 +3,7 @@ package logs
 import (
 	"errors"
 	"io"
+	"strconv"
 	"time"
 	"bufio"
 	"fmt"
@@ -20,6 +21,7 @@ type LineParser struct {
 type Line struct {
 	// Dunno much about this.
 	Time time.Time
+	Index int64
 	Nick string
 	Message string
 	Channel string
@@ -59,14 +61,26 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 	// Seek line by line, starting from lastLine.
 	rdr := bufio.NewReader(f)
 	index := int64(0)
+	lc := int64(0)
+	lineGuess := int64(file.Size / 48)
+	if lineGuess < 1 {
+		lineGuess = 1
+	}
+	buffer := make([]Line, lineGuess)
 	for line := ""; e == nil; line, e = rdr.ReadString('\n') {
 		if line == "" {
 			continue
 		}
-		result, e := p.ParseLine(&file, &line, index)
+		result := &buffer[0]
+		if lc >= lineGuess {
+			result = &Line{}
+		} else {
+			result = &buffer[lc]
+		}
+		e := p.ParseLine(&file, &line, index, result)
 		if e == nil {
-			//p.Out <- result
-			fmt.Sprintf("%s", result)
+			p.Out <- *result
+			lc += int64(1)
 		}
 		index += int64(len(line))
 	}
@@ -76,7 +90,25 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 	}
 }
 
-func (p *LineParser) ParseLine(file *Logfile, line *string, index int64) (l Line, e error) {
+func combineTime(t *time.Time, ts string) time.Time {
+	h, e := strconv.ParseInt(ts[0:2], 10, 32)
+	if e != nil {
+		panic(fmt.Sprintf("Panicing : %s", e))
+	}
+	m, e := strconv.ParseInt(ts[3:5], 10, 32)
+	if e != nil {
+		panic(fmt.Sprintf("Panicing combining : %s", e))
+	}
+	s, e := strconv.ParseInt(ts[6:8], 10, 32)
+	if e != nil {
+		panic(fmt.Sprintf("Panicing combining time: %s", e))
+	}
+	return time.Date(t.Year(), t.Month(), t.Day(), int(h), int(m), int(s), 0, time.UTC)
+}
+
+func (p *LineParser) ParseLine(file *Logfile, line *string, index int64, l *Line) (e error) {
+	l.Index = index
+	l.Channel = file.Channel
 	for _, r := range skiplist {
 			m := r.FindAllString(*line, -1)
 			if len(m) > 0 {
@@ -93,11 +125,11 @@ func (p *LineParser) ParseLine(file *Logfile, line *string, index int64) (l Line
 					if i == 0 { continue }
 					switch name {
 						case "nick":
-							l.Nick = sub[i]
+							l.Nick = match[i]
 						case "time":
-//							l.Time = sub[i]
+							l.Time = combineTime(&file.Time, match[i])
 						case "msg":
-							l.Message = sub[i]
+							l.Message = match[i]
 						default:
 							panic("Don't understand " + name)
 					}
