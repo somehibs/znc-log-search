@@ -11,7 +11,7 @@ import (
 
 type FileCollector struct {
 	now time.Time
-	out chan Logfile
+	Out chan Logfile
 }
 
 type Logfile struct {
@@ -39,18 +39,22 @@ func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
+func (fc *FileCollector) InitChan() {
+	fc.Out = make(chan Logfile, GetConf().Queues["file"])
+}
+
 func (fc *FileCollector) GetLogsForever() error {
 	// TODO: find oldest file in sphinx
-	fc.out = make(chan Logfile, GetConf().Queues["file"])
 	fc.now = time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	today := StartOfDay(time.Now())
 	for ;; {
 		if fc.now.After(today) {
 			fc.now = today
-			fc.out = make(chan Logfile)
+			fc.Out <- Logfile{}
+			fc.Out = make(chan Logfile)
 			return nil
 		}
-		fc.GetLogsForDay(fc.out, fc.now)
+		fc.GetLogsForDay(fc.Out, fc.now)
 	  fc.now = fc.now.Add(time.Hour*24)
 	}
 	return nil
@@ -104,16 +108,13 @@ func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneCh
 	if e != nil {
 		return e
 	}
-	MergePaths(match, &day)
-	//for _, i := range merged {
-	//	reply <- i
-	//}
+	MergePaths(reply, match, &day)
 	return nil
 }
 
-func MergePaths(match []string, day *time.Time) []Logfile {
+func MergePaths(reply chan Logfile, match []string, day *time.Time) {
 	subset := make([]Logfile, len(match))
-	sizes := map[string]*Logfile{}
+	sizes := make(map[string]*Logfile, len(match))
 	appended := 0
 	//fmt.Printf("Parsing: %d\n", len(match))
 	for _, m := range match {
@@ -127,14 +128,13 @@ func MergePaths(match []string, day *time.Time) []Logfile {
 		}
 		appended += 1
 	}
-	//fmt.Printf("Queuing: %d\n", len(sizes))
-	superset := make([]Logfile, len(sizes))
-	iter := 0
+	fmt.Printf("Queuing: %d\n", len(sizes))
+	//superset := make([]Logfile, len(sizes))
+	//iter := 0
 	for _, l := range sizes {
-		superset[iter] = *l
-		iter += 1
+		reply <- *l
 	}
-	return superset
+	//return superset
 }
 
 var whitelist = map[string]bool{}
