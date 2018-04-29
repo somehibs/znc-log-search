@@ -39,8 +39,9 @@ func GetConfByName(filename string) LogsConfig {
 		return cache
 	}
 	var conf = config.NewConfig()
+	conf.Load(file.NewSource(file.WithPath("./default_config.json")))
 	conf.Load(file.NewSource(file.WithPath(filename)))
-	conf.Load(envvar.NewSource(), flag.NewSource(), file.NewSource(file.WithPath("./default_config.json")))
+	conf.Load(envvar.NewSource(), flag.NewSource())
 	var confObj = LogsConfig{}
 	conf.Get().Scan(&confObj)
 	cachedFile = filename

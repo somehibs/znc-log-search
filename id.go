@@ -17,21 +17,38 @@ type IdLine struct {
 type IdFeed struct {
 	In chan Line
 	Out chan IdLine
+	cache []map[string]int64
+	c arango.Client
 }
 
 func (f *IdFeed) QueryIdsForever() {
+	f.cache = make([]map[string]int64, 2)
 	for ;; {
-		f.Out = make(chan IdLine, GetConf().Queues["id"])
-		conf := GetConf().Arango
-		httpConnection, e := http.NewConnection(http.ConnectionConfig{Endpoints: conf.Endpoints})
+		e := f.Connect()
 		if e != nil {
-			panic("Cannot connect to ArangoDb")
+			panic(fmt.Sprintf("%s", e.Error()))
 		}
-		driver, e := arango.NewClient(arango.ClientConfig{Connection: httpConnection, Authentication: arango.BasicAuthentication(conf.User, conf.Password)})
-		if e != nil {
-			panic("Cannot open Arango connection")
+		for ;; {
+			QueryId(<-f.In)
 		}
-		fmt.Printf("Got driver %s", driver)
-		panic("")
 	}
+}
+
+func QueryId(l Line) {
+	//
+}
+
+func (f *IdFeed) Connect() (e error) {
+	f.Out = make(chan IdLine, GetConf().Queues["id"])
+	conf := GetConf().Arango
+	httpConnection, e := http.NewConnection(http.ConnectionConfig{Endpoints: conf.Endpoints})
+	if e != nil {
+		return e
+	}
+	c, e := arango.NewClient(arango.ClientConfig{Connection: httpConnection, Authentication: arango.BasicAuthentication(conf.User, conf.Password)})
+	if e != nil {
+		return e
+	}
+	fmt.Printf("Got it %s\n", c)
+	return
 }
