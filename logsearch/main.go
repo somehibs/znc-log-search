@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 
 	"github.com/somehibs/znc-log-search"
 )
@@ -19,7 +19,17 @@ func main() {
 
 	// Create an ID parser
 	id := logs.IdFeed{In: parser.Out}
-	id.QueryIdsForever()
+	id.InitChan()
+	go id.QueryIdsForever()
+
+	lines := 0
+	for {
+		lines += 1
+		line := <-id.Out
+		if lines % 1000 == 0 {
+			fmt.Printf("Lines: %d Last: %+v\n", lines, line)
+		}
+	}
 	//if e != nil {
 	//	fmt.Printf("Error: %s\n", e)
 	//}

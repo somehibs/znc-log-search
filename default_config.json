@@ -5,17 +5,5 @@
 		"line": 10000,
 		"id": 10000
 	},
-	"network": "mynetwork",
-	"arango": {
-		"endpoints": [
-			"http://127.0.0.1:8529"
-		],
-		"user": "<OVERRIDE ME>",
-		"password": "<OVERRIDE ME>"
-	},
-	"sphinx": {
-		"host":"127.0.0.1",
-		"port": 9999,
-		"user": "irc"
-	}
+	"network": "mynetwork"
 }

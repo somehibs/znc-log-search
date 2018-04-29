@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 	"bufio"
 	"fmt"
@@ -125,7 +126,7 @@ func (p *LineParser) ParseLine(file *Logfile, line *string, index int64, l *Line
 					if i == 0 { continue }
 					switch name {
 						case "nick":
-							l.Nick = match[i]
+							l.Nick = strings.ToLower(match[i])
 						case "time":
 							l.Time = combineTime(&file.Time, match[i])
 						case "msg":
