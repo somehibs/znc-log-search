@@ -7,5 +7,5 @@ import (
 
 func main() {
 	conf := logs.GetConf()
-	fmt.Println(logs.UserNetworkZncPath(conf.network))
+	fmt.Println(logs.UserNetworkZncPath(conf.Network))
 }

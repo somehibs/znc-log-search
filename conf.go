@@ -8,14 +8,14 @@ import (
 )
 
 type SphinxConfig struct {
-		host string
-		port int
-		user string
+		Host string
+		Port int
+		User string
 }
 
 type LogsConfig struct {
-	network string
-	sphinxql SphinxConfig
+	Network string
+	Sphinx SphinxConfig
 }
 
 func GetConf() LogsConfig {
