@@ -26,6 +26,9 @@ func main() {
 	sphinx := logs.SphinxFeed{In: id.Out}
 	go sphinx.InsertSphinxForever()
 
+	c := make(chan int)
+	<-c
+
 	//lines := 0
 	//for {
 	//	lines += 1

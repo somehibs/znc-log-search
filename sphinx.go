@@ -2,11 +2,15 @@ package logs
 
 import (
 	"fmt"
+
+	"database/sql"
+	_"github.com/go-sql-driver/mysql"
 )
 
 type SphinxFeed struct {
 	In chan IdLine
 	queue []string
+	c *sql.DB
 }
 
 func (f *SphinxFeed) InsertSphinxForever() {
@@ -34,5 +38,7 @@ func (f *SphinxFeed) QueueOne(l IdLine) {
 }
 
 func (f *SphinxFeed) Connect() error {
-	return nil
+	db, e := sql.Open("mysql", "")//GetConf().Sphinx.Dsn)
+	f.c = db
+	return e
 }
