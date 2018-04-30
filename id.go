@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"strconv"
+	"encoding/json"
 
 	arango "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -39,7 +40,19 @@ func (f *IdFeed) InitLens() {
 	f.nickLen = f.GetLen(nicks)
 }
 
+type ArangoLen struct {
+	Value int64
+	Len bool
+}
+
 func (f *IdFeed) GetLen(collection string) (length int64) {
+	cur, e := f.db.Query(nil, "FOR x IN " + collection + " FILTER x._key == \"0\" RETURN x", nil)
+	doc := ArangoLen{}
+	_, e = cur.ReadDocument(nil, &doc)
+	if e != nil || doc.Value == 0 {
+		panic("Don't know what len this db has")
+	}
+	length = doc.Value
 	return
 }
 
@@ -69,22 +82,58 @@ func (f *IdFeed) QueryId(l Line) (id IdLine) {
 	return
 }
 
-type ArangoItem struct {
-	Value string
+func qu(i map[string]string) string {
+	s, e := json.Marshal(i)
+	if e != nil {
+		panic(fmt.Sprintf("Could not json input: %s (E: %s)", i, e))
+	}
+	return string(s)
+}
+
+func Upsert(collection string, filter map[string]string, insert map[string]string, update map[string]string) (u string) {
+	u = "UPSERT " + qu(filter)
+	u += " INSERT " + qu(insert)
+	u += " UPDATE " + qu(update)
+	u += " IN " + collection + " RETURN {NEW}"
+	return
 }
 
 func (f *IdFeed) Get(collection, value string) int64 {
-	item := ArangoItem{}
-	cur, e := f.db.Query(nil, "FOR i IN "+collection+" FILTER i.value == @val RETURN i", map[string]interface{}{"val": value})
+	length := &f.chanLen
+	if (collection == nicks) {
+		length = &f.nickLen
+	} else if (collection != channels) {
+		panic("Don't know this collection")
+	}
+	if *length == 0 {
+		panic("bad configuration")
+	}
+
+	query := Upsert(collection,
+									map[string]string{"value": value},
+									map[string]string{"_key": fmt.Sprintf("%d", *length), "value": value},
+									map[string]string{})
+	cur, e := f.db.Query(nil, query, nil)
 	if e != nil {
+		fmt.Printf("query: %s\n", query)
 		panic(e.Error())
 	}
-	m, e := cur.ReadDocument(nil, &item)
-	fmt.Printf("k: %s m: %+v\n", value, item)
+	defer cur.Close()
+
+	var item map[string]map[string]string
+	_, e = cur.ReadDocument(nil, &item)
 	if e == nil || arango.IsNoMoreDocuments(e) {
-		ret, e := strconv.ParseInt(m.Key, 10, 64)
+		key := item["NEW"]["_key"]
+		ret, e := strconv.ParseInt(key, 10, 64)
 		if e != nil {
 			panic(e.Error())
+		}
+		if ret == *length {
+			// Key changed!
+			*length = (*length)+1
+			f.SaveLen(collection, *length)
+		} else {
+			fmt.Println("Key exists")
 		}
 		cache := &f.nicks
 		if collection == "Channels" {
@@ -94,6 +143,15 @@ func (f *IdFeed) Get(collection, value string) int64 {
 		return ret
 	}
 	panic(e.Error())
+}
+
+func (f *IdFeed) SaveLen(collection string, newLength int64) {
+	// Forcibly update the index variable
+	lenItem := ArangoLen{newLength, true}
+	c, e := f.db.Collection(nil, collection)
+	fmt.Printf("C: %+v E: %+v\n", c, e)
+	m, e := c.UpdateDocument(nil, "0", &lenItem)
+	fmt.Printf("M: %+v E: %+v\n", m, e)
 }
 
 func (f *IdFeed) Connect() (e error) {
