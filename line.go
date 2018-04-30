@@ -46,6 +46,10 @@ var re []*regexp.Regexp = []*regexp.Regexp {
 	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] <(?P<nick>%s)> (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
 }
 
+func (p *LineParser) InitChan() {
+	p.Out = make(chan Line, GetConf().Queues["line"])
+}
+
 func (p *LineParser) ParseLinesForever() {
 	f := <-p.In
 	for ;f.Channel != ""; {
