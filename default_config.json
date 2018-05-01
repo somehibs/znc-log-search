@@ -3,8 +3,8 @@
 	"queues": {
 		"file": 200,
 		"line": 10000,
-		"id": 10000,
-		"sphinx": 10000
+		"id": 5000,
+		"sphinx": 5000
 	},
 	"network": "mynetwork"
 }

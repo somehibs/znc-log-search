@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"encoding/json"
+	"strings"
 
 	arango "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -47,10 +48,19 @@ type ArangoLen struct {
 
 func (f *IdFeed) GetLen(collection string) (length int64) {
 	cur, e := f.db.Query(nil, "FOR x IN " + collection + " FILTER x._key == \"0\" RETURN x", nil)
+	if e != nil {
+		panic(fmt.Sprintf("error querying len %s because %s", collection, e))
+	}
 	doc := ArangoLen{}
 	_, e = cur.ReadDocument(nil, &doc)
 	if e != nil || doc.Value == 0 {
-		panic("Don't know what len this db has")
+		fmt.Printf("\n\nNo len for collection %s!\n\n", collection)
+		m, e := f.UpsertNow(collection, map[string]string{"_key":"0"}, map[string]string{"_key":"0", "Value":"1"}, map[string]string{})
+		if e != nil {
+			panic(fmt.Sprintf("db failed to create len %s", e))
+		}
+		fmt.Printf("Metadata %+v\n", m)
+		doc.Value = 1
 	}
 	length = doc.Value
 	return
@@ -98,6 +108,23 @@ func Upsert(collection string, filter map[string]string, insert map[string]strin
 	return
 }
 
+func (f *IdFeed) UpsertNow(collection string, query, insert, update map[string]string) (r interface{}, e error) {
+	q := Upsert(collection, query, insert, update)
+	cur, e := f.db.Query(nil, q, nil)
+	if e != nil {
+		fmt.Printf("Error upserting: %s\n", e)
+		panic("")
+	}
+	defer cur.Close()
+	var item map[string]map[string]string
+	_, e = cur.ReadDocument(nil, &item)
+	if e == nil || arango.IsNoMoreDocuments(e) {
+		r = item
+		return
+	}
+	return
+}
+
 func (f *IdFeed) Get(collection, value string) int64 {
 	length := &f.chanLen
 	if (collection == nicks) {
@@ -116,6 +143,10 @@ func (f *IdFeed) Get(collection, value string) int64 {
 	cur, e := f.db.Query(nil, query, nil)
 	if e != nil {
 		fmt.Printf("query: %s\n", query)
+		if strings.Contains(e.Error(), "unique constraint violated") {
+			*length += 1
+			return f.Get(collection, value)
+		}
 		panic(e.Error())
 	}
 	defer cur.Close()
@@ -132,8 +163,6 @@ func (f *IdFeed) Get(collection, value string) int64 {
 			// Key changed!
 			*length = (*length)+1
 			f.SaveLen(collection, *length)
-		} else {
-			fmt.Println("Key exists")
 		}
 		cache := &f.nicks
 		if collection == "Channels" {

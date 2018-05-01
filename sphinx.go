@@ -10,6 +10,7 @@ import (
 
 type SphinxFeed struct {
 	In chan IdLine
+	index int
 	queue []string
 	c *sql.DB
 	value []string
@@ -17,6 +18,7 @@ type SphinxFeed struct {
 }
 
 func (f *SphinxFeed) InsertSphinxForever() {
+	f.index = 1
 	for {
 		e := f.Connect()
 		if e != nil {
@@ -39,17 +41,21 @@ func (f *SphinxFeed) Insert() {
 		return
 	}
 	query := fmt.Sprintf("INSERT INTO irc_msg (id, timestamp, nick, channel, channel_id, msg, line_index, nick_id, permission) VALUES %s", strings.Join(f.value, ","))
-	cur, e := f.c.Query(query, f.valueData)
+	//fmt.Printf("Query: %s", query)
+	cur, e := f.c.Query(query, f.valueData...)
 	if e != nil {
 		panic(fmt.Sprintf("Query failed %s", e))
 	}
-	fmt.Printf("Cursor: %s", cur)
+	defer cur.Close()
+	//fmt.Printf("Cursor: %s", cur)
+	f.value = make([]string, 0)
+	f.valueData = make([]interface{}, 0)
 }
 
 func (f *SphinxFeed) QueueOne(l IdLine) {
 	// Buffer this line into the query string.
 	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-	f.valueData = append(f.valueData, 1)
+	f.valueData = append(f.valueData, f.index)
 	f.valueData = append(f.valueData, l.Line.Time)
 	f.valueData = append(f.valueData, l.Line.Nick)
 	f.valueData = append(f.valueData, l.Line.Channel)
@@ -58,6 +64,7 @@ func (f *SphinxFeed) QueueOne(l IdLine) {
 	f.valueData = append(f.valueData, l.Line.Index)
 	f.valueData = append(f.valueData, l.NickId)
 	f.valueData = append(f.valueData, permissionFor(l.Line.Channel))
+	f.index += 1
 }
 
 func permissionFor(channel string) int {
@@ -75,6 +82,7 @@ func permissionFor(channel string) int {
 
 func (f *SphinxFeed) Connect() error {
 	db, e := sql.Open("mysql", GetConf().Sphinx.Dsn)
+	db.SetMaxOpenConns(30)
 	f.c = db
 	return e
 }
