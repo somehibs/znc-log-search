@@ -1,6 +1,8 @@
 package logs
 
 import (
+	"fmt"
+
 	"github.com/micro/go-config"
 	"github.com/micro/go-config/source/envvar"
 	"github.com/micro/go-config/source/file"
@@ -8,9 +10,7 @@ import (
 )
 
 type SphinxConfig struct {
-		Host string
-		Port int
-		User string
+		Dsn string
 }
 
 type ArangoConfig struct {
@@ -23,6 +23,7 @@ type ArangoConfig struct {
 type LogsConfig struct {
 	Network string
 	Whitelist []string // for whitelisting specific channels
+	Permissions map[int][]string
 	Sphinx SphinxConfig
 	Queues map[string]int
 	Arango ArangoConfig
@@ -41,13 +42,21 @@ func GetConfByName(filename string) LogsConfig {
 	}
 	var conf = config.NewConfig()
 
-	conf.Load(file.NewSource(file.WithPath("./default_config.json")),
+	e := conf.Load(file.NewSource(file.WithPath("./default_config.json")),
 						envvar.NewSource(),
-						flag.NewSource())
-	conf.Load(file.NewSource(file.WithPath(filename)))
+						flag.NewSource(),
+						file.NewSource(file.WithPath(filename)))
+
+	if e != nil {
+		panic(fmt.Sprintf("Error loading config %s", e))
+	}
 
 	var confObj = LogsConfig{}
-	conf.Get().Scan(&confObj)
+	g := conf.Get()
+	fmt.Println("Fetching now")
+	g.Scan(&confObj)
+	fmt.Println("scanned now")
+
 	cachedFile = filename
 	cache = confObj
 	return confObj

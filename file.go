@@ -12,6 +12,7 @@ import (
 type FileCollector struct {
 	now time.Time
 	Out chan Logfile
+	Done chan int
 }
 
 type Logfile struct {
@@ -41,6 +42,7 @@ func StartOfDay(t time.Time) time.Time {
 
 func (fc *FileCollector) InitChan() {
 	fc.Out = make(chan Logfile, GetConf().Queues["file"])
+	fc.Done = make(chan int)
 }
 
 func (fc *FileCollector) GetLogsForever() error {
@@ -48,14 +50,14 @@ func (fc *FileCollector) GetLogsForever() error {
 	fc.now = time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	today := StartOfDay(time.Now())
 	for ;; {
-		if fc.now.After(today) {
+		if fc.now.After(today) || fc.now == today {
 			fc.now = today
 			fc.Out <- Logfile{}
-			fc.Out = make(chan Logfile)
+			fc.Done <- 0
 			return nil
 		}
 		fc.GetLogsForDay(fc.Out, fc.now)
-	  fc.now = fc.now.Add(time.Hour*24)
+		fc.now = fc.now.Add(time.Hour*24)
 	}
 	return nil
 }
@@ -128,7 +130,7 @@ func MergePaths(reply chan Logfile, match []string, day *time.Time) {
 		}
 		appended += 1
 	}
-	fmt.Printf("Queuing: %d\n", len(sizes))
+	fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
 	//superset := make([]Logfile, len(sizes))
 	//iter := 0
 	for _, l := range sizes {

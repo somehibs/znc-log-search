@@ -59,10 +59,10 @@ func (f *IdFeed) GetLen(collection string) (length int64) {
 func (f *IdFeed) QueryIdsForever() {
 	for ;; {
 		e := f.Connect()
-		f.InitLens()
 		if e != nil {
 			panic(fmt.Sprintf("%s", e.Error()))
 		}
+		f.InitLens()
 		for ;; {
 			f.Out <- f.QueryId(<-f.In)
 		}
@@ -156,7 +156,7 @@ func (f *IdFeed) SaveLen(collection string, newLength int64) {
 
 func (f *IdFeed) Connect() (e error) {
 	conf := GetConf().Arango
-	//fmt.Printf("C: %+v\n", GetConf())
+	fmt.Printf("C: %+v\n", GetConf())
 	httpConnection, e := http.NewConnection(http.ConnectionConfig{Endpoints: conf.Endpoints})
 	if e != nil {
 		return e
@@ -166,5 +166,8 @@ func (f *IdFeed) Connect() (e error) {
 		return e
 	}
 	f.db, e = f.c.Database(nil, conf.Db)
+	if e != nil {
+		return e
+	}
 	return
 }

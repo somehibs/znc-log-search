@@ -1,7 +1,8 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
+	"time"
 
 	"github.com/somehibs/znc-log-search"
 )
@@ -26,8 +27,18 @@ func main() {
 	sphinx := logs.SphinxFeed{In: id.Out}
 	go sphinx.InsertSphinxForever()
 
-	c := make(chan int)
-	<-c
+	<-collector.Done
+	fmt.Println("Collector finished queueing files.")
+	for {
+		if len(parser.Out) > 0 ||
+			len(id.Out) > 0 {
+			fmt.Println("Queues not empty. Waiting for queues to empty...")
+			time.Sleep(2*time.Second)
+		} else {
+			fmt.Println("Queues are complete. Finishing.")
+			return
+		}
+	}
 
 	//lines := 0
 	//for {
