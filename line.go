@@ -83,6 +83,7 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 			result = &buffer[lc]
 		}
 		e := p.ParseLine(&file, &line, index, result)
+		//fmt.Printf("line: %+v\nlen: %s\n", result, len(line))
 		if e == nil {
 			p.Out <- *result
 			lc += int64(1)

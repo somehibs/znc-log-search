@@ -11,7 +11,6 @@ import (
 type SphinxFeed struct {
 	In chan IdLine
 	index int
-	queue []string
 	c *sql.DB
 	value []string
 	valueData []interface{}
@@ -26,9 +25,10 @@ func (f *SphinxFeed) InsertSphinxForever() {
 		}
 		for {
 			f.QueueOne(<-f.In)
-			if len(f.In) > 0 && len(f.queue) < 500 {
+			if len(f.In) > 0 && len(f.value) < 500 {
 				continue
 			}
+			fmt.Println("Inserting %s users", len(f.value))
 			f.Insert()
 		}
 	}
@@ -56,7 +56,7 @@ func (f *SphinxFeed) QueueOne(l IdLine) {
 	// Buffer this line into the query string.
 	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	f.valueData = append(f.valueData, f.index)
-	f.valueData = append(f.valueData, l.Line.Time)
+	f.valueData = append(f.valueData, l.Line.Time.Unix())
 	f.valueData = append(f.valueData, l.Line.Nick)
 	f.valueData = append(f.valueData, l.Line.Channel)
 	f.valueData = append(f.valueData, l.ChannelId)
@@ -77,7 +77,7 @@ func permissionFor(channel string) int {
 			}
 		}
 	}
-	return 9999
+	return 3
 }
 
 func (f *SphinxFeed) Connect() error {
