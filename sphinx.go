@@ -28,7 +28,6 @@ func (f *SphinxFeed) InsertSphinxForever() {
 			if len(f.In) > 0 && len(f.value) < 500 {
 				continue
 			}
-			fmt.Println("Inserting %s users", len(f.value))
 			f.Insert()
 		}
 	}
