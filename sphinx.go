@@ -33,13 +33,20 @@ func (f *SphinxFeed) InsertSphinxForever() {
 	}
 }
 
+//func (f *SphinxFeed) GetOldest(channel string) {
+//	c, e := f.c.Query(getOldest, nil)
+//	if e != nil {
+//		panic("Couldn't find oldest item in sphinx")
+//	}
+//}
+
 func (f *SphinxFeed) Insert() {
 	// Insert a prebuilt query string
 	if len(f.value) == 0 {
 		fmt.Println("Ignoring attempt to insert no data")
 		return
 	}
-	query := fmt.Sprintf("INSERT INTO irc_msg (id, timestamp, nick, channel, channel_id, msg, line_index, nick_id, permission) VALUES %s", strings.Join(f.value, ","))
+	query := fmt.Sprintf("INSERT INTO irc_msg (id, timestamp, nick, channel, channel_id, msg, line_index, nick_id, permission, user_id) VALUES %s", strings.Join(f.value, ","))
 	//fmt.Printf("Query: %s", query)
 	cur, e := f.c.Query(query, f.valueData...)
 	if e != nil {
@@ -53,7 +60,7 @@ func (f *SphinxFeed) Insert() {
 
 func (f *SphinxFeed) QueueOne(l IdLine) {
 	// Buffer this line into the query string.
-	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	f.valueData = append(f.valueData, f.index)
 	f.valueData = append(f.valueData, l.Line.Time.Unix())
 	f.valueData = append(f.valueData, l.Line.Nick)
@@ -63,6 +70,7 @@ func (f *SphinxFeed) QueueOne(l IdLine) {
 	f.valueData = append(f.valueData, l.Line.Index)
 	f.valueData = append(f.valueData, l.NickId)
 	f.valueData = append(f.valueData, permissionFor(l.Line.Channel))
+	f.valueData = append(f.valueData, l.UserId)
 	f.index += 1
 }
 
@@ -76,7 +84,7 @@ func permissionFor(channel string) int {
 			}
 		}
 	}
-	return 3
+	return GetConf().DefaultPermission
 }
 
 func (f *SphinxFeed) Connect() error {

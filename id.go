@@ -11,12 +11,14 @@ import (
 )
 
 var channels = "Channels"
+var users = "Users"
 var nicks = "Nicks"
 
 type IdLine struct {
 	Line *Line
 	NickId int64
 	ChannelId int64
+	UserId int64
 }
 
 type IdFeed struct {
@@ -24,8 +26,10 @@ type IdFeed struct {
 	Out chan IdLine
 	nicks map[string]int64
 	chans map[string]int64
+	users map[string]int64
 	nickLen int64
 	chanLen int64
+	userLen int64
 	c arango.Client
 	db arango.Database
 }
@@ -33,12 +37,14 @@ type IdFeed struct {
 func (f *IdFeed) InitChan() {
 	f.Out = make(chan IdLine, GetConf().Queues["id"])
 	f.chans = map[string]int64{}
+	f.users = map[string]int64{}
 	f.nicks = map[string]int64{}
 }
 
 func (f *IdFeed) InitLens() {
 	f.chanLen = f.GetLen(channels)
 	f.nickLen = f.GetLen(nicks)
+	f.userLen = f.GetLen(users)
 }
 
 type ArangoLen struct {
@@ -89,6 +95,10 @@ func (f *IdFeed) QueryId(l Line) (id IdLine) {
 	if id.ChannelId == 0 {
 		id.ChannelId = f.Get(channels, l.Channel)
 	}
+	id.UserId = f.users[l.User]
+	if id.UserId == 0 {
+		id.UserId = f.Get(users, l.User)
+	}
 	return
 }
 
@@ -129,6 +139,8 @@ func (f *IdFeed) Get(collection, value string) int64 {
 	length := &f.chanLen
 	if (collection == nicks) {
 		length = &f.nickLen
+	} else if (collection == users) {
+		length = &f.userLen
 	} else if (collection != channels) {
 		panic("Don't know this collection")
 	}
@@ -165,8 +177,10 @@ func (f *IdFeed) Get(collection, value string) int64 {
 			f.SaveLen(collection, *length)
 		}
 		cache := &f.nicks
-		if collection == "Channels" {
+		if collection == channels {
 			cache = &f.chans
+		} else if collection == users {
+			cache = &f.users
 		}
 		(*cache)[value] = ret
 		return ret

@@ -24,6 +24,7 @@ type LogsConfig struct {
 	Network string
 	Whitelist []string // for whitelisting specific channels
 	Permissions map[int][]string
+	DefaultPermission int
 	Sphinx SphinxConfig
 	Queues map[string]int
 	Arango ArangoConfig

@@ -26,6 +26,7 @@ type Line struct {
 	Nick string
 	Message string
 	Channel string
+	User string
 }
 
 // Common regex fields
@@ -115,6 +116,7 @@ func combineTime(t *time.Time, ts string) time.Time {
 func (p *LineParser) ParseLine(file *Logfile, line *string, index int64, l *Line) (e error) {
 	l.Index = index
 	l.Channel = file.Channel
+	l.User = file.User
 	for _, r := range skiplist {
 			m := r.FindAllString(*line, -1)
 			if len(m) > 0 {
