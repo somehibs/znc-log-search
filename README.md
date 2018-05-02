@@ -11,16 +11,13 @@ to read any data for display, the original log files will need to be retained an
 config object description is in conf.go, config.json is your custom json file
 
 ## go
-
-golang.org has a download link
+golang.org has a download link, go get github.com/somehibs/znc-log-search
 
 ## arangodb
-
 create a server, user, password and db for this application. configure them in the config. create collections Nicks, Channels and Users. the application will blow up until they're accessible.
 
 ## sphinx config
-
-index irc_msg
+```index irc_msg
 {
   type      = rt
   path      = /var/lib/sphinxsearch/data/irc_msg
@@ -34,3 +31,9 @@ index irc_msg
   rt_attr_uint    = permission
   rt_attr_uint    = user_id
 }
+```
+
+## znc
+running at commit 15ccaca41a17a06dfb5957156c03056524a71ae6
+the regex would need updating if you changed the default log line format.
+log path hasn't changed in a while but this code expects /home/user/.znc/users/a_user/networks/config_network/#channel/YYYY-MM-DD.log
