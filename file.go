@@ -13,6 +13,8 @@ type FileCollector struct {
 	now time.Time
 	Out chan Logfile
 	Done chan int
+	sphinx SphinxFeed
+	id IdFeed
 }
 
 type Logfile struct {
@@ -21,6 +23,7 @@ type Logfile struct {
 	Channel string
 	Size int64
 	Time time.Time
+	StartOffset int
 }
 
 var zncPath = ""
@@ -36,13 +39,18 @@ func checkPath() error {
 	return nil
 }
 
-func StartOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-}
-
 func (fc *FileCollector) InitChan() {
 	fc.Out = make(chan Logfile, GetConf().Queues["file"])
 	fc.Done = make(chan int)
+}
+
+func (fc *FileCollector) InitDb(sphinx SphinxFeed, id IdFeed) {
+	fc.sphinx = sphinx
+	fc.id = id
+}
+
+func StartOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (fc *FileCollector) GetLogsForever() error {
@@ -105,6 +113,7 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 
 func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneChan string) error {
 	checkPath()
+	chanData := fc.sphinx.GetMaxChanIndexes(day)
 	path := fmt.Sprintf(zncPath, oneChan, day.String()[:10])
 	match, e := filepath.Glob(path)
 	if e != nil {
@@ -131,12 +140,9 @@ func MergePaths(reply chan Logfile, match []string, day *time.Time) {
 		appended += 1
 	}
 	fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
-	//superset := make([]Logfile, len(sizes))
-	//iter := 0
 	for _, l := range sizes {
 		reply <- *l
 	}
-	//return superset
 }
 
 var whitelist = map[string]bool{}

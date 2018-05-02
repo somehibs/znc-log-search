@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
@@ -11,7 +12,7 @@ import (
 type SphinxFeed struct {
 	In chan IdLine
 	index int
-	c *sql.DB
+	Db *sql.DB
 	value []string
 	valueData []interface{}
 }
@@ -19,26 +20,25 @@ type SphinxFeed struct {
 func (f *SphinxFeed) InsertSphinxForever() {
 	f.index = 1
 	for {
-		e := f.Connect()
-		if e != nil {
-			panic(fmt.Sprintf("Could not connect to Sphinx: %s", e.Error))
+		f.QueueOne(<-f.In)
+		if len(f.In) > 0 && len(f.value) < 500 {
+			continue
 		}
-		for {
-			f.QueueOne(<-f.In)
-			if len(f.In) > 0 && len(f.value) < 500 {
-				continue
-			}
-			f.Insert()
-		}
+		f.Insert()
 	}
 }
 
 //func (f *SphinxFeed) GetOldest(channel string) {
-//	c, e := f.c.Query(getOldest, nil)
+//	c, e := f.Db.Query(getOldest, nil)
 //	if e != nil {
 //		panic("Couldn't find oldest item in sphinx")
 //	}
 //}
+
+func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) {
+	// Clamp the day to the end of the day, add 24 hours and take a second off
+	day.Add(24*time.Hour)
+}
 
 func (f *SphinxFeed) Insert() {
 	// Insert a prebuilt query string
@@ -48,7 +48,7 @@ func (f *SphinxFeed) Insert() {
 	}
 	query := fmt.Sprintf("INSERT INTO irc_msg (id, timestamp, nick, channel, channel_id, msg, line_index, nick_id, permission, user_id) VALUES %s", strings.Join(f.value, ","))
 	//fmt.Printf("Query: %s", query)
-	cur, e := f.c.Query(query, f.valueData...)
+	cur, e := f.Db.Query(query, f.valueData...)
 	if e != nil {
 		panic(fmt.Sprintf("Query failed %s", e))
 	}
@@ -89,7 +89,7 @@ func permissionFor(channel string) int {
 
 func (f *SphinxFeed) Connect() error {
 	db, e := sql.Open("mysql", GetConf().Sphinx.Dsn)
-	db.SetMaxOpenConns(30)
-	f.c = db
+	db.SetMaxOpenConns(29)
+	f.Db = db
 	return e
 }
