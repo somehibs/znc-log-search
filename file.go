@@ -47,17 +47,17 @@ func (fc *FileCollector) InitChan() {
 
 func (fc *FileCollector) GetLogsForever() error {
 	// TODO: find oldest file in sphinx
-	fc.now = time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	today := StartOfDay(time.Now())
+	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
+	fc.now = today
 	for ;; {
-		if fc.now.After(today) || fc.now == today {
-			fc.now = today
+		if fc.now.Before(end) {//|| fc.now == today {
 			fc.Out <- Logfile{}
 			fc.Done <- 0
 			return nil
 		}
 		fc.GetLogsForDay(fc.Out, fc.now)
-		fc.now = fc.now.Add(time.Hour*24)
+		fc.now = fc.now.Add(-time.Hour*24)
 	}
 	return nil
 }

@@ -192,7 +192,9 @@ func (f *IdFeed) SaveLen(collection string, newLength int64) {
 	// Forcibly update the index variable
 	lenItem := ArangoLen{newLength, true}
 	c, e := f.db.Collection(nil, collection)
-	//fmt.Printf("C: %+v E: %+v\n", c, e)
+	if e != nil {
+		fmt.Printf("C: %+v E: %+v\n", c, e)
+	}
 	m, e := c.UpdateDocument(nil, "0", &lenItem)
 	if e != nil {
 		panic(fmt.Sprintf("M: %+v E: %+v\n", m, e))
@@ -201,7 +203,6 @@ func (f *IdFeed) SaveLen(collection string, newLength int64) {
 
 func (f *IdFeed) Connect() (e error) {
 	conf := GetConf().Arango
-	fmt.Printf("C: %+v\n", GetConf())
 	httpConnection, e := http.NewConnection(http.ConnectionConfig{Endpoints: conf.Endpoints})
 	if e != nil {
 		return e
