@@ -13,8 +13,8 @@ type FileCollector struct {
 	now time.Time
 	Out chan Logfile
 	Done chan int
-	sphinx SphinxFeed
-	id IdFeed
+	sphinx *SphinxFeed
+	id *IdFeed
 	indexes map[string]ChanIndex
 }
 
@@ -24,7 +24,7 @@ type Logfile struct {
 	Channel string
 	Size int64
 	Time time.Time
-	StartOffset int
+	StartIndex int64
 }
 
 var zncPath = ""
@@ -45,7 +45,7 @@ func (fc *FileCollector) InitChan() {
 	fc.Done = make(chan int)
 }
 
-func (fc *FileCollector) InitDb(sphinx SphinxFeed, id IdFeed) {
+func (fc *FileCollector) InitDb(sphinx *SphinxFeed, id *IdFeed) {
 	fc.sphinx = sphinx
 	fc.id = id
 }
@@ -54,8 +54,7 @@ func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-func (fc *FileCollector) GetLogsForever() error {
-	// TODO: find oldest file in sphinx
+func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
@@ -66,24 +65,39 @@ func (fc *FileCollector) GetLogsForever() error {
 			return nil
 		}
 		fc.GetLogsForDay(fc.Out, fc.now)
-		fc.now = fc.now.Add(-time.Hour*24)
+	//	fc.now = fc.now.Add(-time.Hour*24)
 	}
 	return nil
 }
 
+func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
+	for {
+		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
+		// Wait for all the queues to drain.
+		// Sleep for a little bit
+		for {
+			if len(file) > 0 || len(id) > 0 || len(fc.Out) > 0 {
+				time.Sleep(2*time.Second)
+			} else {
+				break
+			}
+		}
+		time.Sleep(45*time.Second)
+	}
+}
+
 func (fc *FileCollector) GetLogsForDay(reply chan Logfile, day time.Time) error {
-	return fc.GetLogsForChan(reply, day, "*")
+	return fc.GetLogsForChan(reply, day, "#drugs")
 }
 
-func LogfilePath(match string, day *time.Time) *Logfile {
-	return LogfilePathExist(match, day, nil)
+func (fc *FileCollector) LogfilePath(match string, day *time.Time) *Logfile {
+	return fc.LogfilePathExist(match, day, nil)
 }
 
-func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
+func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 	exploded := strings.Split(match, "/")
 	user := ""
 	channel := ""
-	knownOffset := 0
 	for i := range exploded {
 		if i > 0 {
 			switch exploded[i-1] {
@@ -93,6 +107,20 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 				channel = exploded[i]
 			}
 		}
+	}
+	knownOffset := int64(0)
+	uid := fmt.Sprintf("%s%s", user, channel)
+	index := fc.indexes[uid]
+	if index.Channel != "" {
+		knownOffset = index.Index+1
+		fmt.Printf("known offset %s on %+v\n", channel, index)
+	} else {
+		fmt.Printf("Couldn't find index %s on %+v\n", uid, index)
+		//for _, v := range fc.indexes {
+		//	fmt.Printf("%+v\n", v)
+		//}
+		//fmt.Printf("Ok: %d\n", len(fc.indexes))
+		//panic("")
 	}
 	//file, e := os.Open(match)
 	fileSize := int64(0)
@@ -109,7 +137,7 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 		exist.Channel = channel
 		exist.Size = fileSize
 		exist.Time = *day
-		exist.StartOffset = knownOffset
+		exist.StartIndex = knownOffset
 		return exist
 	}
 }
@@ -117,25 +145,25 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneChan string) error {
 	checkPath()
 	chanData := fc.sphinx.GetMaxChanIndexes(&day)
-	fc.indexes := fc.id.GetChannels(chanData)
-	fmt.Printf("%+v\n", chanData)//chanDataClean := fc.id.GetChannels()
+	chanData = fc.id.GetChannels(chanData)
+	fc.indexes = ToMap(chanData)
 	path := fmt.Sprintf(zncPath, oneChan, day.String()[:10])
 	match, e := filepath.Glob(path)
 	if e != nil {
 		return e
 	}
-	MergePaths(reply, match, &day)
+	fc.MergePaths(reply, match, &day)
 	return nil
 }
 
-func MergePaths(reply chan Logfile, match []string, day *time.Time) {
+func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *time.Time) {
 	subset := make([]Logfile, len(match))
 	sizes := make(map[string]*Logfile, len(match))
 	appended := 0
 	//fmt.Printf("Parsing: %d\n", len(match))
 	for _, m := range match {
 		lp := subset[appended]
-		l := LogfilePathExist(m, day, &lp)
+		l := fc.LogfilePathExist(m, day, &lp)
 		if Whitelist(l.Channel) == false {
 			continue
 		}

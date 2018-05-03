@@ -23,14 +23,16 @@ func main() {
 	// Sphinx feed
 	sphinx := logs.SphinxFeed{In: id.Out}
 	sphinx.Connect()
+	id.Connect()
 
-	collector.InitDb(sphinx, id)
+	collector.InitDb(&sphinx, &id)
 
 	// Dispatch logs forever to the output channel
-	go collector.GetLogsForever()
+	go collector.DailyLogsForever(parser.Out, id.Out)
 	go parser.ParseLinesForever()
+	ExhaustChan(parser.Out)
 	go id.QueryIdsForever()
-	go sphinx.InsertSphinxForever()
+	//go sphinx.InsertSphinxForever()
 
 	<-collector.Done
 	fmt.Println("Collector finished queueing files.")
@@ -44,16 +46,22 @@ func main() {
 			return
 		}
 	}
+}
 
-	//lines := 0
-	//for {
-	//	lines += 1
-	//	line := <-id.Out
-	//	if lines % 1000 == 0 {
-	//		fmt.Printf("Lines: %d Last: %+v\n", lines, line)
-	//	}
-	//}
-	//if e != nil {
-	//	fmt.Printf("Error: %s\n", e)
-	//}
+func ExhaustChan(c chan logs.Line) {
+	e := ""
+	lines := 0
+	for {
+		lines += 1
+		line := <-c
+		fmt.Printf("Last: %+v\n", line)
+		panic("")
+		time.Sleep(3*time.Second)
+		if lines % 1000 == 0 {
+			fmt.Printf("Lines: %d Last: %+v\n", lines, line)
+		}
+	}
+	if e != "" {
+		fmt.Printf("Error: %s\n", e)
+	}
 }

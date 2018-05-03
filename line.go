@@ -67,8 +67,11 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 			fmt.Printf("Failed to open file (Err: %s)\n", e)
 	}
 	// Seek line by line, starting from lastLine.
+	a, e := f.Seek(file.StartIndex, 0)
+	bail := file.Size - file.StartIndex
+	fmt.Printf("bail: %d tried: %d new ind: %d e: %s\n", bail, file.StartIndex, a, e)
 	rdr := bufio.NewReader(f)
-	index := int64(0)
+	index := int64(file.StartIndex)
 	lc := int64(0)
 	lineGuess := int64(file.Size / 48)
 	if lineGuess < 1 {
@@ -150,5 +153,6 @@ func (p *LineParser) ParseLine(file *Logfile, line *string, index int64, l *Line
 			return
 		}
 	}
-	panic("NO MATCH")
+	return errors.New("no match")
+//	panic(fmt.Sprintf("NO MATCH %s %d", *line, len(*line)))
 }

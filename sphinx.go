@@ -45,6 +45,14 @@ type ChanIndex struct {
 	UserId int64
 }
 
+func ToMap(ind []ChanIndex) map[string]ChanIndex {
+	ret := map[string]ChanIndex{}
+	for _, v := range ind {
+		ret[fmt.Sprintf("%s%s", v.User, v.Channel)] = v
+	}
+	return ret
+}
+
 func (f *SphinxFeed) GetMaxId() (r int64) {
 	cur, e := f.Db.Query("SELECT MAX(id) FROM irc_msg")
 	if e != nil {
@@ -65,8 +73,8 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
 	max := day.Add(24*time.Hour)
 	max = max.Add(-1*time.Second)
-	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id", day.Unix(), max.Unix())
-	fmt.Printf("%s\n", query)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id ORDER BY timestamp ASC LIMIT 1000", day.Unix(), max.Unix())
+	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {
 		panic(fmt.Sprintf("Could not query chan indexes %s", e))

@@ -52,6 +52,10 @@ type ArangoLen struct {
 	Len bool
 }
 
+type ArangoItem struct {
+	Value string
+}
+
 func (f *IdFeed) GetLen(collection string) (length int64) {
 	cur, e := f.db.Query(nil, "FOR x IN " + collection + " FILTER x._key == \"0\" RETURN x", nil)
 	if e != nil {
@@ -74,10 +78,6 @@ func (f *IdFeed) GetLen(collection string) (length int64) {
 
 func (f *IdFeed) QueryIdsForever() {
 	for ;; {
-		e := f.Connect()
-		if e != nil {
-			panic(fmt.Sprintf("%s", e.Error()))
-		}
 		f.InitLens()
 		for ;; {
 			f.Out <- f.QueryId(<-f.In)
@@ -85,18 +85,35 @@ func (f *IdFeed) QueryIdsForever() {
 	}
 }
 
-func (f *IdFeed) GetChannels(chanIndex []ChanIndex) {
-	for _, v := range chanIndex {
-		//
+func (f *IdFeed) GetChannels(chanIndex []ChanIndex) []ChanIndex {
+	for i := range chanIndex {
+		f.GetChannel(&chanIndex[i])
+		f.GetUser(&chanIndex[i])
 	}
+	return chanIndex
+}
+
+func (f *IdFeed) GetUser(chanIndex *ChanIndex) {
+	chanIndex.User = f.GetId(users, chanIndex.UserId)
 }
 
 func (f *IdFeed) GetChannel(chanIndex *ChanIndex) {
-	return f.GetId(channels, chanIndex)
+	chanIndex.Channel = f.GetId(channels, chanIndex.ChannelId)
 }
 
-func (f *IdFeed) GetId(collection string, chanIndex *ChanIndex) {
-	q := fmt.Sprintf("FOR x IN %s FILTER x.%s == \"%d\" RETURN x\n", collection, key, id)
+func (f *IdFeed) GetId(collection string, id int64) string {
+	q := fmt.Sprintf("FOR x IN %s FILTER x._key == \"%d\" RETURN x\n", collection, id)
+	cur, e := f.db.Query(nil, q, nil)
+	if e != nil {
+		panic(fmt.Sprintf("could not fetch id %s", e))
+	}
+	defer cur.Close()
+	var item ArangoItem
+	_, e = cur.ReadDocument(nil, &item)
+	if e != nil {
+		panic(fmt.Sprintf("Error reading document %s", e))
+	}
+	return item.Value
 }
 
 func (f *IdFeed) QueryId(l Line) (id IdLine) {
