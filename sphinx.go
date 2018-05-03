@@ -11,14 +11,14 @@ import (
 
 type SphinxFeed struct {
 	In chan IdLine
-	index int
+	index int64
 	Db *sql.DB
 	value []string
 	valueData []interface{}
 }
 
 func (f *SphinxFeed) InsertSphinxForever() {
-	f.index = 1
+	f.index = f.GetMaxId()+1
 	for {
 		f.QueueOne(<-f.In)
 		if len(f.In) > 0 && len(f.value) < 500 {
@@ -35,9 +35,53 @@ func (f *SphinxFeed) InsertSphinxForever() {
 //	}
 //}
 
-func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) {
+type ChanIndex struct {
+	Index int64
+
+	Channel string
+	User string
+
+	ChannelId int64
+	UserId int64
+}
+
+func (f *SphinxFeed) GetMaxId() (r int64) {
+	cur, e := f.Db.Query("SELECT MAX(id) FROM irc_msg")
+	if e != nil {
+		panic(fmt.Sprintf("%s", e))
+	}
+	if cur.Next() {
+		var max int64
+		e = cur.Scan(&max)
+		if e != nil {
+			panic(fmt.Sprintf("%s", e))
+		}
+		r = max
+	}
+	return
+}
+
+func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
-	day.Add(24*time.Hour)
+	max := day.Add(24*time.Hour)
+	max = max.Add(-1*time.Second)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id", day.Unix(), max.Unix())
+	fmt.Printf("%s\n", query)
+	cur, e := f.Db.Query(query)
+	if e != nil {
+		panic(fmt.Sprintf("Could not query chan indexes %s", e))
+	}
+	fmt.Printf("Max: %s Min: %s\n", max, day)
+	m := make([]ChanIndex, 0)
+	for ;cur.Next(); {
+		var channel, user, index int64
+		e = cur.Scan(&index, &channel, &user)
+		m = append(m, ChanIndex{Index: index, UserId: user, ChannelId: channel})
+		if e != nil {
+			panic(fmt.Sprintf("Could not scan row %s", e))
+		}
+	}
+	return m
 }
 
 func (f *SphinxFeed) Insert() {

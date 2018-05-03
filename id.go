@@ -85,6 +85,20 @@ func (f *IdFeed) QueryIdsForever() {
 	}
 }
 
+func (f *IdFeed) GetChannels(chanIndex []ChanIndex) {
+	for _, v := range chanIndex {
+		//
+	}
+}
+
+func (f *IdFeed) GetChannel(chanIndex *ChanIndex) {
+	return f.GetId(channels, chanIndex)
+}
+
+func (f *IdFeed) GetId(collection string, chanIndex *ChanIndex) {
+	q := fmt.Sprintf("FOR x IN %s FILTER x.%s == \"%d\" RETURN x\n", collection, key, id)
+}
+
 func (f *IdFeed) QueryId(l Line) (id IdLine) {
 	id.Line = &l
 	id.NickId = f.nicks[l.Nick]

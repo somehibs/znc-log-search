@@ -47,6 +47,8 @@ var re []*regexp.Regexp = []*regexp.Regexp {
 	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] <(?P<nick>%s)> (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
 }
 
+var akaIndex = 2;
+
 func (p *LineParser) InitChan() {
 	p.Out = make(chan Line, GetConf().Queues["line"])
 }
@@ -124,26 +126,29 @@ func (p *LineParser) ParseLine(file *Logfile, line *string, index int64, l *Line
 				return
 			}
 	}
-	for _, r := range re {
-			// test regexp against line
-			match := r.FindStringSubmatch(*line)
-			if len(match) > 0 {
-				sub := r.SubexpNames()
-				for i, name := range sub {
-					if i == 0 { continue }
-					switch name {
-						case "nick":
-							l.Nick = strings.ToLower(match[i])
-						case "time":
-							l.Time = combineTime(&file.Time, match[i])
-						case "msg":
-							l.Message = match[i]
-						default:
-							panic("Don't understand " + name)
-					}
+	for ri, r := range re {
+		// test regexp against line
+		match := r.FindStringSubmatch(*line)
+		if len(match) > 0 {
+			sub := r.SubexpNames()
+			for i, name := range sub {
+				if i == 0 { continue }
+				switch name {
+					case "nick":
+						l.Nick = strings.ToLower(match[i])
+					case "time":
+						l.Time = combineTime(&file.Time, match[i])
+					case "msg":
+						l.Message = match[i]
+						if ri == akaIndex && strings.Contains(l.Message, "is now known as") {
+							return errors.New("aka ignore")
+						}
+					default:
+						panic("Don't understand " + name)
 				}
-				return
 			}
+			return
+		}
 	}
 	panic("NO MATCH")
 }

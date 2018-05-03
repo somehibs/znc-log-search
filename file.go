@@ -15,6 +15,7 @@ type FileCollector struct {
 	Done chan int
 	sphinx SphinxFeed
 	id IdFeed
+	indexes map[string]ChanIndex
 }
 
 type Logfile struct {
@@ -82,6 +83,7 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 	exploded := strings.Split(match, "/")
 	user := ""
 	channel := ""
+	knownOffset := 0
 	for i := range exploded {
 		if i > 0 {
 			switch exploded[i-1] {
@@ -99,7 +101,7 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 		fileSize = stat.Size()
 	}
 	if exist == nil {
-		lf := Logfile{match, user, channel, fileSize, *day}
+		lf := Logfile{match, user, channel, fileSize, *day, knownOffset}
 		return &lf
 	} else {
 		exist.Path = match
@@ -107,13 +109,16 @@ func LogfilePathExist(match string, day *time.Time, exist *Logfile) *Logfile {
 		exist.Channel = channel
 		exist.Size = fileSize
 		exist.Time = *day
+		exist.StartOffset = knownOffset
 		return exist
 	}
 }
 
 func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneChan string) error {
 	checkPath()
-	chanData := fc.sphinx.GetMaxChanIndexes(day)
+	chanData := fc.sphinx.GetMaxChanIndexes(&day)
+	fc.indexes := fc.id.GetChannels(chanData)
+	fmt.Printf("%+v\n", chanData)//chanDataClean := fc.id.GetChannels()
 	path := fmt.Sprintf(zncPath, oneChan, day.String()[:10])
 	match, e := filepath.Glob(path)
 	if e != nil {

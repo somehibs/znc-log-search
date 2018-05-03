@@ -8,6 +8,10 @@ import (
 )
 
 func main() {
+	// Create a channel file collector
+	collector := logs.FileCollector{}
+	collector.InitChan()
+
 	// Create a line parser
 	parser := logs.LineParser{In: collector.Out}
 	parser.InitChan()
@@ -20,9 +24,6 @@ func main() {
 	sphinx := logs.SphinxFeed{In: id.Out}
 	sphinx.Connect()
 
-	// Create a channel file collector
-	collector := logs.FileCollector{}
-	collector.InitChan()
 	collector.InitDb(sphinx, id)
 
 	// Dispatch logs forever to the output channel
