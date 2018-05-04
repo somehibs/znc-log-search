@@ -56,20 +56,24 @@ func (p *LineParser) InitChan() {
 func (p *LineParser) ParseLinesForever() {
 	f := <-p.In
 	for ;f.Channel != ""; {
-		p.ParseLinesForFile(<-p.In)
+		p.ParseLinesForFile(f)
+		f = <-p.In
 	}
 }
 
 func (p *LineParser) ParseLinesForFile(file Logfile) {
+	//fmt.Printf("hi: %s\n", file)
 	// Open the file.
 	f, e := os.Open(file.Path)
 	if e != nil {
-			fmt.Printf("Failed to open file (Err: %s)\n", e)
+			fmt.Printf("Failed to open file %s (Err: %s)\n", file.Path, e)
 	}
 	// Seek line by line, starting from lastLine.
 	a, e := f.Seek(file.StartIndex, 0)
 	bail := file.Size - file.StartIndex
-	fmt.Printf("bail: %d tried: %d new ind: %d e: %s\n", bail, file.StartIndex, a, e)
+	if file.StartIndex > 0 {
+		fmt.Printf("%s %s bail: %d tried: %d new ind: %d e: %s\n", file.Time, file.Channel, bail, file.StartIndex, a, e)
+	}
 	rdr := bufio.NewReader(f)
 	index := int64(file.StartIndex)
 	lc := int64(0)
@@ -95,6 +99,9 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 			lc += int64(1)
 		}
 		index += int64(len(line))
+	}
+	if lc > 0 {
+		fmt.Printf("Sent %d lines for %s\n", lc, file.Channel)
 	}
 	if e != nil && e != io.EOF {
 		fmt.Println("Error: " + e.Error())

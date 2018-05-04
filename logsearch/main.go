@@ -7,7 +7,16 @@ import (
 	"github.com/somehibs/znc-log-search"
 )
 
+var feed *logs.SphinxFeed
+
 func main() {
+	//Collect(true)
+	//c := make(chan int,0)
+	//<-c
+	Collect(false)
+}
+
+func Collect(today bool) {
 	// Create a channel file collector
 	collector := logs.FileCollector{}
 	collector.InitChan()
@@ -22,37 +31,49 @@ func main() {
 
 	// Sphinx feed
 	sphinx := logs.SphinxFeed{In: id.Out}
-	sphinx.Connect()
+	if feed == nil {
+		feed = &sphinx
+		sphinx.Connect()
+	} else {
+		sphinx = *feed
+	}
 	id.Connect()
 
 	collector.InitDb(&sphinx, &id)
 
 	// Dispatch logs forever to the output channel
-	go collector.DailyLogsForever(parser.Out, id.Out)
+	if today {
+		go collector.DailyLogsForever(parser.Out, id.Out)
+	} else {
+		go collector.GetLogsBackwards()
+	}
 	go parser.ParseLinesForever()
-	ExhaustChan(parser.Out)
 	go id.QueryIdsForever()
-	//go sphinx.InsertSphinxForever()
+	//go ExhaustChan(id.Out)
+	go sphinx.InsertSphinxForever()
 
-	<-collector.Done
-	fmt.Println("Collector finished queueing files.")
-	for {
-		if len(parser.Out) > 0 ||
-			len(id.Out) > 0 {
-			fmt.Println("Queues not empty. Waiting for queues to empty...")
-			time.Sleep(2*time.Second)
-		} else {
-			fmt.Println("Queues are complete. Finishing.")
-			return
+	if today == false {
+		<-collector.Done
+		fmt.Println("Collector finished queueing files.")
+		for {
+			if len(parser.Out) > 0 ||
+				len(id.Out) > 0 {
+				fmt.Println("Queues not empty. Waiting for queues to empty...")
+				time.Sleep(2*time.Second)
+			} else {
+				fmt.Println("Queues are complete. Finishing.")
+				return
+			}
 		}
 	}
 }
 
-func ExhaustChan(c chan logs.Line) {
+func ExhaustChan(c chan logs.IdLine) {
 	e := ""
 	lines := 0
 	for {
 		lines += 1
+		fmt.Printf("pending\n")
 		line := <-c
 		fmt.Printf("Last: %+v\n", line)
 		panic("")

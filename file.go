@@ -58,6 +58,7 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
+	//fc.now = time.Date(2015, 12, 23, 0, 0, 0, 0, time.UTC)
 	for ;; {
 		if fc.now.Before(end) {//|| fc.now == today {
 			fc.Out <- Logfile{}
@@ -65,29 +66,34 @@ func (fc *FileCollector) GetLogsBackwards() error {
 			return nil
 		}
 		fc.GetLogsForDay(fc.Out, fc.now)
-	//	fc.now = fc.now.Add(-time.Hour*24)
+		fc.now = fc.now.Add(-time.Hour*24)
 	}
 	return nil
 }
 
 func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
 	for {
+		fmt.Println("dailylogsforever")
 		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
+		fmt.Println("gotten")
+		time.Sleep(2*time.Second)
 		// Wait for all the queues to drain.
 		// Sleep for a little bit
 		for {
 			if len(file) > 0 || len(id) > 0 || len(fc.Out) > 0 {
 				time.Sleep(2*time.Second)
 			} else {
+				fmt.Println("dozing")
 				break
 			}
 		}
-		time.Sleep(45*time.Second)
+		fmt.Println("zzzz")
+		time.Sleep(90*time.Second)
 	}
 }
 
 func (fc *FileCollector) GetLogsForDay(reply chan Logfile, day time.Time) error {
-	return fc.GetLogsForChan(reply, day, "#drugs")
+	return fc.GetLogsForChan(reply, day, "*")
 }
 
 func (fc *FileCollector) LogfilePath(match string, day *time.Time) *Logfile {
@@ -115,7 +121,7 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 		knownOffset = index.Index+1
 		fmt.Printf("known offset %s on %+v\n", channel, index)
 	} else {
-		fmt.Printf("Couldn't find index %s on %+v\n", uid, index)
+		//fmt.Printf("Couldn't find index %s on %+v\n", uid, index)
 		//for _, v := range fc.indexes {
 		//	fmt.Printf("%+v\n", v)
 		//}
@@ -174,6 +180,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 	}
 	fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
 	for _, l := range sizes {
+		fmt.Printf("Dispatching %s\n", l)
 		reply <- *l
 	}
 }
