@@ -69,11 +69,11 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 			fmt.Printf("Failed to open file %s (Err: %s)\n", file.Path, e)
 	}
 	// Seek line by line, starting from lastLine.
-	a, e := f.Seek(file.StartIndex, 0)
-	bail := file.Size - file.StartIndex
-	if file.StartIndex > 0 {
-		fmt.Printf("%s %s bail: %d tried: %d new ind: %d e: %s\n", file.Time, file.Channel, bail, file.StartIndex, a, e)
-	}
+	_, e = f.Seek(file.StartIndex, 0)
+	//bail := file.Size - file.StartIndex
+	//if file.StartIndex > 0 {
+	//	fmt.Printf("%s %s bail: %d tried: %d new ind: %d e: %s\n", file.Time, file.Channel, bail, file.StartIndex, a, e)
+	//}
 	rdr := bufio.NewReader(f)
 	index := int64(file.StartIndex)
 	lc := int64(0)

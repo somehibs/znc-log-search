@@ -73,21 +73,15 @@ func (fc *FileCollector) GetLogsBackwards() error {
 
 func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
 	for {
-		fmt.Println("dailylogsforever")
 		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
-		fmt.Println("gotten")
 		time.Sleep(2*time.Second)
-		// Wait for all the queues to drain.
-		// Sleep for a little bit
 		for {
 			if len(file) > 0 || len(id) > 0 || len(fc.Out) > 0 {
 				time.Sleep(2*time.Second)
 			} else {
-				fmt.Println("dozing")
 				break
 			}
 		}
-		fmt.Println("zzzz")
 		time.Sleep(90*time.Second)
 	}
 }
@@ -119,7 +113,7 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 	index := fc.indexes[uid]
 	if index.Channel != "" {
 		knownOffset = index.Index+1
-		fmt.Printf("known offset %s on %+v\n", channel, index)
+		//fmt.Printf("known offset %s on %+v\n", channel, index)
 	} else {
 		//fmt.Printf("Couldn't find index %s on %+v\n", uid, index)
 		//for _, v := range fc.indexes {
@@ -173,7 +167,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 		if Whitelist(l.Channel) == false {
 			continue
 		}
-		if sizes[lp.Channel] == nil || sizes[lp.Channel].Size < l.Size {
+		if sizes[lp.Channel] == nil || sizes[lp.Channel].Size < l.Size || l.StartIndex > sizes[lp.Channel].StartIndex {
 			sizes[lp.Channel] = l
 		}
 		appended += 1
