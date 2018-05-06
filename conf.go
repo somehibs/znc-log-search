@@ -55,10 +55,10 @@ func GetConfByName(filename string) LogsConfig {
 	}
 
 	var confObj = LogsConfig{}
+	fmt.Println("Loading config...")
 	g := conf.Get()
-	fmt.Println("Fetching now")
 	g.Scan(&confObj)
-	fmt.Println("scanned now")
+	fmt.Println("Config loaded!")
 
 	cachedFile = filename
 	cache = confObj
