@@ -39,11 +39,13 @@ func (m *Manager) WaitUntilCompletion() {
 }
 
 func (m *Manager) Daily() {
+	fmt.Println("Configured for daily collection.")
 	go m.collector.DailyLogsForever(m.parser.Out, m.id.Out)
 	m.Process()
 }
 
 func (m *Manager) Historical() {
+	fmt.Println("Configured for historical collection.")
 	go m.collector.GetLogsBackwards()
 	m.Process()
 }
