@@ -174,7 +174,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 	}
 	fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
 	for _, l := range sizes {
-		fmt.Printf("Dispatching %s\n", l)
+		//fmt.Printf("Dispatching %s\n", l)
 		reply <- *l
 	}
 }

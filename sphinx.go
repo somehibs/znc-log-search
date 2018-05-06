@@ -73,8 +73,8 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
 	max := day.Add(24*time.Hour)
 	max = max.Add(-1*time.Second)
-	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 1000", day.Unix(), max.Unix())
-	//fmt.Printf("%s\n", query)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 1000 option max_matches=%d", day.Unix(), max.Unix(), 100000)
+	fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {
 		panic(fmt.Sprintf("Could not query chan indexes %s", e))
@@ -84,6 +84,11 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	for ;cur.Next(); {
 		var channel, user, index int64
 		e = cur.Scan(&index, &channel, &user)
+	//	mapKey := fmt.Sprintf("%d%d", channel, user)
+	//	if chanMap[mapKey] > index {
+	//		// Supersceded by another channel entry
+	//		continue
+	//	}
 		m = append(m, ChanIndex{Index: index, UserId: user, ChannelId: channel})
 		if e != nil {
 			panic(fmt.Sprintf("Could not scan row %s", e))

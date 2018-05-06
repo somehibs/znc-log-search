@@ -101,7 +101,7 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 		index += int64(len(line))
 	}
 	if lc > 0 {
-		fmt.Printf("Sent %d lines for %s\n", lc, file.Channel)
+		fmt.Printf("Sent %d lines for %s on day %s\n", lc, file.Channel, file.Time)
 	}
 	if e != nil && e != io.EOF {
 		fmt.Println("Error: " + e.Error())

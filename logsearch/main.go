@@ -10,10 +10,10 @@ import (
 var feed *logs.SphinxFeed
 
 func main() {
-	Collect(true)
-	c := make(chan int,0)
-	<-c
-	//Collect(false)
+	//Collect(true)
+	//c := make(chan int,0)
+	//<-c
+	Collect(false)
 }
 
 func Collect(today bool) {
