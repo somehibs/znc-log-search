@@ -82,7 +82,7 @@ func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error 
 				break
 			}
 		}
-		time.Sleep(90*time.Second)
+		time.Sleep(60*time.Second)
 	}
 }
 
@@ -172,7 +172,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 		}
 		appended += 1
 	}
-	fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
+	//fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
 	for _, l := range sizes {
 		//fmt.Printf("Dispatching %s\n", l)
 		reply <- *l
@@ -199,7 +199,7 @@ func Whitelist(channel string) bool {
 	ok := whitelist[channel]
 	if ok == false && channel[0] == '#' && notified[channel] == false {
 		notified[channel] = true
-		fmt.Println("Ignoring " + channel)
+		//fmt.Println("Ignoring " + channel)
 	}
 	return ok
 }

@@ -21,6 +21,8 @@ type ArangoConfig struct {
 }
 
 type LogsConfig struct {
+	Daily bool
+	Prometheus bool
 	Network string
 	Whitelist []string // for whitelisting specific channels
 	Permissions map[int][]string

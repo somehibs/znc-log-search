@@ -10,58 +10,13 @@ import (
 var feed *logs.SphinxFeed
 
 func main() {
-	Collect(true)
-	//Collect(false)
-}
-
-func Collect(today bool) {
-	// Create a channel file collector
-	collector := logs.FileCollector{}
-	collector.InitChan()
-
-	// Create a line parser
-	parser := logs.LineParser{In: collector.Out}
-	parser.InitChan()
-
-	// Create an ID parser
-	id := logs.IdFeed{In: parser.Out}
-	id.InitChan()
-
-	// Sphinx feed
-	sphinx := logs.SphinxFeed{In: id.Out}
-	if feed == nil {
-		feed = &sphinx
-		sphinx.Connect()
+	m := logs.NewManager()
+	if logs.GetConf().Daily {
+		m.Daily()
 	} else {
-		sphinx = *feed
+		m.Historical()
 	}
-	id.Connect()
-
-	collector.InitDb(&sphinx, &id)
-
-	// Dispatch logs forever to the output channel
-	if today {
-		go collector.DailyLogsForever(parser.Out, id.Out)
-	} else {
-		go collector.GetLogsBackwards()
-	}
-	go parser.ParseLinesForever()
-	go id.QueryIdsForever()
-	//go ExhaustChan(id.Out)
-	go sphinx.InsertSphinxForever()
-
-	<-collector.Done
-	fmt.Println("Collector finished queueing files.")
-	for {
-		if len(parser.Out) > 0 ||
-			len(id.Out) > 0 {
-			fmt.Println("Queues not empty. Waiting for queues to empty...")
-			time.Sleep(2*time.Second)
-		} else {
-			fmt.Println("Queues are complete. Finishing.")
-			return
-		}
-	}
+	m.WaitUntilCompletion()
 }
 
 func ExhaustChan(c chan logs.IdLine) {

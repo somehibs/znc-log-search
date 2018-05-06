@@ -1,4 +1,5 @@
 {
+	"prometheus": false,
 	"whitelist": [],
 	"queues": {
 		"file": 200,
