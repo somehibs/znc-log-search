@@ -10,10 +10,8 @@ import (
 var feed *logs.SphinxFeed
 
 func main() {
-	//Collect(true)
-	//c := make(chan int,0)
-	//<-c
-	Collect(false)
+	Collect(true)
+	//Collect(false)
 }
 
 func Collect(today bool) {
@@ -52,18 +50,16 @@ func Collect(today bool) {
 	//go ExhaustChan(id.Out)
 	go sphinx.InsertSphinxForever()
 
-	if today == false {
-		<-collector.Done
-		fmt.Println("Collector finished queueing files.")
-		for {
-			if len(parser.Out) > 0 ||
-				len(id.Out) > 0 {
-				fmt.Println("Queues not empty. Waiting for queues to empty...")
-				time.Sleep(2*time.Second)
-			} else {
-				fmt.Println("Queues are complete. Finishing.")
-				return
-			}
+	<-collector.Done
+	fmt.Println("Collector finished queueing files.")
+	for {
+		if len(parser.Out) > 0 ||
+			len(id.Out) > 0 {
+			fmt.Println("Queues not empty. Waiting for queues to empty...")
+			time.Sleep(2*time.Second)
+		} else {
+			fmt.Println("Queues are complete. Finishing.")
+			return
 		}
 	}
 }

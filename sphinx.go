@@ -74,12 +74,12 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	max := day.Add(24*time.Hour)
 	max = max.Add(-1*time.Second)
 	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 1000 option max_matches=%d", day.Unix(), max.Unix(), 100000)
-	fmt.Printf("%s\n", query)
+	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {
 		panic(fmt.Sprintf("Could not query chan indexes %s", e))
 	}
-	fmt.Printf("Max: %s Min: %s\n", max, day)
+	//fmt.Printf("Max: %s Min: %s\n", max, day)
 	m := make([]ChanIndex, 0)
 	for ;cur.Next(); {
 		var channel, user, index int64
