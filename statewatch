@@ -1,0 +1,6 @@
+#!/bin/bash
+while true; do
+  clear;
+  curl 127.0.0.1:9991/state;
+  sleep 2;
+done

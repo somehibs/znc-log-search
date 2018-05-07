@@ -1,4 +1,6 @@
 {
+	"daily": false,
+	"defaultpermission": 9999,
 	"prometheus": false,
 	"whitelist": [],
 	"queues": {

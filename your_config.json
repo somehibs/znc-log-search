@@ -1,0 +1,20 @@
+{
+	"daily": false,
+	"sphinx": {"dsn": "user@tcp(host:port)/database?interpolateParams=true"},
+	"defaultpermission": 9999,
+	"permissions": {
+		"1": ["#test"],
+		"2": ["#somehibs"],
+		"3": ["#*"]
+
+	},
+	"arango": { "endpoints": ["http://host:port"], "user": "user", "password": "password", "db": "goirclog" },
+	"whitelist": [],
+	"queues": {
+		"file": 100,
+		"line": 5000,
+		"id": 5000,
+		"sphinx": 5000
+	},
+	"network": "mynetwork"
+}
