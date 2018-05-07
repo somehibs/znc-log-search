@@ -23,7 +23,7 @@ func (f *SphinxFeed) InsertSphinxForever() {
 	f.index = f.GetMaxId()+1
 	for {
 		f.BufferOne(<-f.In)
-		if len(f.In) > 0 && len(f.value) < 500 {
+		if (GetConf().Daily && len(f.In) > 0) || len(f.value) < 1000 {
 			continue
 		}
 		f.Insert()
@@ -75,7 +75,7 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
 	max := day.Add(24*time.Hour)
 	max = max.Add(-1*time.Second)
-	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 1000 option max_matches=%d", day.Unix(), max.Unix(), 100000)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 9999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
 	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {
@@ -151,7 +151,7 @@ func permissionFor(channel string) int {
 
 func (f *SphinxFeed) Connect() error {
 	db, e := sql.Open("mysql", GetConf().Sphinx.Dsn)
-	db.SetMaxOpenConns(29)
+	db.SetMaxOpenConns(26)
 	f.Db = db
 	return e
 }
