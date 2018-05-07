@@ -33,6 +33,8 @@ create a server, user, password and db for this application. configure them in t
 }
 ```
 
+if you find yourself at a high line count and running low on ram, you could add ondisk_attrs = 1. this will remove all the uints above from ram, which means querying on just those will be slow. you should try to primarily query by field
+
 ## znc
 running at commit 15ccaca41a17a06dfb5957156c03056524a71ae6
 the regex would need updating if you changed the default log line format.
