@@ -2,8 +2,8 @@
 	"prometheus": false,
 	"whitelist": [],
 	"queues": {
-		"file": 200,
-		"line": 10000,
+		"file": 100,
+		"line": 5000,
 		"id": 5000,
 		"sphinx": 5000
 	},

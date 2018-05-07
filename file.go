@@ -167,7 +167,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 		if Whitelist(l.Channel) == false {
 			continue
 		}
-		if sizes[lp.Channel] == nil || sizes[lp.Channel].Size < l.Size || l.StartIndex > sizes[lp.Channel].StartIndex {
+		if sizes[lp.Channel] == nil || (sizes[lp.Channel].Size < l.Size && l.StartIndex >= sizes[lp.Channel].StartIndex) {
 			sizes[lp.Channel] = l
 		}
 		appended += 1

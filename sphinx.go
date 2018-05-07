@@ -11,8 +11,10 @@ import (
 
 type SphinxFeed struct {
 	In chan IdLine
-	index int64
 	Db *sql.DB
+	BufferedLines int64
+	InsertedLines int64
+	index int64
 	value []string
 	valueData []interface{}
 }
@@ -20,7 +22,7 @@ type SphinxFeed struct {
 func (f *SphinxFeed) InsertSphinxForever() {
 	f.index = f.GetMaxId()+1
 	for {
-		f.QueueOne(<-f.In)
+		f.BufferOne(<-f.In)
 		if len(f.In) > 0 && len(f.value) < 500 {
 			continue
 		}
@@ -110,13 +112,16 @@ func (f *SphinxFeed) Insert() {
 		panic(fmt.Sprintf("Query failed %s", e))
 	}
 	defer cur.Close()
+	f.InsertedLines += f.BufferedLines
+	f.BufferedLines = 0
 	//fmt.Printf("Cursor: %s", cur)
 	f.value = make([]string, 0)
 	f.valueData = make([]interface{}, 0)
 }
 
-func (f *SphinxFeed) QueueOne(l IdLine) {
+func (f *SphinxFeed) BufferOne(l IdLine) {
 	// Buffer this line into the query string.
+	f.BufferedLines += 1
 	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	f.valueData = append(f.valueData, f.index)
 	f.valueData = append(f.valueData, l.Line.Time.Unix())

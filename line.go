@@ -17,8 +17,7 @@ type LineParser struct {
 	Out chan Line
 	// lastLine exists to prevent reindexing the same file seek index
 	lastLine map[string]map[string]string
-	lineCount int64
-	dog *Watchdog
+	LineCount int64
 }
 
 type Line struct {
@@ -53,14 +52,6 @@ var akaIndex = 2;
 
 func (p *LineParser) InitChan() {
 	p.Out = make(chan Line, GetConf().Queues["line"])
-	p.dog = New(60*time.Minute, p.Timeout)
-}
-
-func (p *LineParser) Timeout() {
-	if p.lineCount > 0 {
-			fmt.Printf("Have sent %d lines\n", p.lineCount)
-	}
-	p.dog.Kick()
 }
 
 func (p *LineParser) ParseLinesForever() {
@@ -107,16 +98,9 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 		if e == nil {
 			p.Out <- *result
 			lc += int64(1)
+			p.LineCount += int64(1)
 		}
 		index += int64(len(line))
-	}
-	//p.dog.Kick()
-	if lc > 0 {
-		p.lineCount += lc
-		if p.lineCount > 15000 {
-			fmt.Printf("Have sent %d lines\n", p.lineCount)
-			p.lineCount = 0
-		}
 	}
 	if e != nil && e != io.EOF {
 		fmt.Println("Error: " + e.Error())

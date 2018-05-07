@@ -1,7 +1,7 @@
 package logs
 
 import (
-	"fmt"
+	//"fmt"
 	"net/http"
 
 	//"github.com/prometheus/client_golang/prometheus"
@@ -16,6 +16,11 @@ type Prometheus struct {
 	gauges map[string]int64
 }
 
+// Return a state object with public fields you want to serve over JSON
+type ApiState interface {
+	ApiState() interface{}
+}
+
 func InitApi(stateHandler http.Handler) *Api {
 	a := Api{}
 	a.Init(&stateHandler)
@@ -24,10 +29,10 @@ func InitApi(stateHandler http.Handler) *Api {
 
 func (a *Api) Init(stateHandler *http.Handler) {
 	if GetConf().Prometheus != false {
-		fmt.Println("Adding prometheus support")
-		// Register a bunch of metrics and pepper the ability to use them throughout the system
+		// Register prometheus' handler.
 		http.Handle("/metrics", promhttp.Handler())
 	}
-	// Register an HTTP handler that also provides an API to query the state of various internal queues via some sort of queue callback
+	// Register an HTTP handler that also provides an API to query the state of various internal queues
 	http.Handle("/state", *stateHandler)
+	go http.ListenAndServe("127.0.0.1:9991", nil)
 }

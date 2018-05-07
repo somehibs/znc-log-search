@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"encoding/json"
 	"strings"
+	"time"
 
 	arango "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -24,6 +25,8 @@ type IdLine struct {
 type IdFeed struct {
 	In chan Line
 	Out chan IdLine
+	LastLineTime *time.Time
+	ArangoCalls int64
 	nicks map[string]int64
 	chans map[string]int64
 	users map[string]int64
@@ -130,6 +133,7 @@ func (f *IdFeed) QueryId(l Line) (id IdLine) {
 	if id.UserId == 0 {
 		id.UserId = f.Get(users, l.User)
 	}
+	f.LastLineTime = &l.Time
 	return
 }
 
@@ -184,6 +188,7 @@ func (f *IdFeed) Get(collection, value string) int64 {
 									map[string]string{"_key": fmt.Sprintf("%d", *length), "value": value},
 									map[string]string{})
 	cur, e := f.db.Query(nil, query, nil)
+	f.ArangoCalls += 1
 	if e != nil {
 		fmt.Printf("query: %s\n", query)
 		if strings.Contains(e.Error(), "unique constraint violated") {
@@ -230,6 +235,7 @@ func (f *IdFeed) SaveLen(collection string, newLength int64) {
 	if e != nil {
 		panic(fmt.Sprintf("M: %+v E: %+v\n", m, e))
 	}
+	f.ArangoCalls += 1
 }
 
 func (f *IdFeed) Connect() (e error) {

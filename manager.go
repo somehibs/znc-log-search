@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 	"net/http"
+	"encoding/json"
 )
 
 type Manager struct {
@@ -79,7 +80,31 @@ func (s StateHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	writer.Write([]byte(s.m.getState()))
 }
 
+type StateDigest struct {
+	ProcessedLines int64
+	ArangoCalls int64
+	LastLineTime *time.Time
+	FileQueue int
+	LineQueue int
+	IdQueue int
+}
+
+func (m *Manager) GetStateDigest() StateDigest {
+	return StateDigest{
+		m.parser.LineCount,
+		m.id.ArangoCalls,
+		m.id.LastLineTime,
+		len(m.collector.Out),
+		len(m.parser.Out),
+		len(m.id.Out),
+	}
+}
+
 func (m *Manager) getState() string {
 	// Queue lengths, messages processed.
-	return fmt.Sprintf("%d", 1000)
+	state, e := json.Marshal(m.GetStateDigest())
+	if e != nil {
+		panic("Fuck")
+	}
+	return string(state)+"\r\n"
 }
