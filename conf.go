@@ -20,16 +20,21 @@ type ArangoConfig struct {
 	Db string
 }
 
-type LogsConfig struct {
+type IndexerConfig struct {
 	Daily bool
+	DefaultPermission int
+	Permissions map[int][]string
+	Whitelist []string // for whitelisting specific channels
+}
+
+type LogsConfig struct {
+	ApiUrl string
 	Prometheus bool
 	Network string
-	Whitelist []string // for whitelisting specific channels
-	Permissions map[int][]string
-	DefaultPermission int
-	Sphinx SphinxConfig
 	Queues map[string]int
+	Sphinx SphinxConfig
 	Arango ArangoConfig
+	Indexer IndexerConfig
 }
 
 var cachedFile = ""
@@ -58,6 +63,7 @@ func GetConfByName(filename string) LogsConfig {
 	fmt.Println("Loading config...")
 	g := conf.Get()
 	g.Scan(&confObj)
+	//panic(fmt.Sprintf("%+v\n",confObj))
 	fmt.Println("Config loaded!")
 
 	cachedFile = filename

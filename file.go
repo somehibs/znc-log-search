@@ -58,7 +58,7 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
-	//fc.now = time.Date(2015, 12, 23, 0, 0, 0, 0, time.UTC)
+	fc.now = time.Date(2016, 6, 20, 0, 0, 0, 0, time.UTC)
 	for ;; {
 		if fc.now.Before(end) {//|| fc.now == today {
 			fc.Out <- Logfile{}
@@ -187,7 +187,7 @@ func Whitelist(channel string) bool {
 		return true
 	}
 	if len(whitelist) == 0 {
-		wl := GetConf().Whitelist
+		wl := GetConf().Indexer.Whitelist
 		if len(wl) == 0 {
 			whitelist = nil
 			return true

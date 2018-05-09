@@ -11,7 +11,7 @@ var feed *logs.SphinxFeed
 
 func main() {
 	m := logs.NewManager()
-	if logs.GetConf().Daily {
+	if logs.GetConf().Indexer.Daily {
 		m.Daily()
 	} else {
 		m.Historical()

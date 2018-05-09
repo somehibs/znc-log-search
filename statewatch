@@ -2,5 +2,5 @@
 while true; do
   clear;
   curl 127.0.0.1:9991/state;
-  sleep 2;
+  sleep 2.5;
 done

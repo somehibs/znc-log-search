@@ -21,7 +21,8 @@ type StateHandler struct {
 
 func NewManager() *Manager {
 	m := Manager{}
-	m.api = InitApi(StateHandler{&m})
+	m.api = NewApi(map[string]http.Handler{"state": StateHandler{&m}})
+	m.api.Listen()
 	m.Init()
 	return &m
 }
@@ -82,6 +83,7 @@ func (s StateHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 
 type StateDigest struct {
 	ProcessedLines int64
+	SphinxLengthQuery int64
 	ArangoCalls int64
 	BufferedSphinx int64
 	InsertedSphinx int64
@@ -94,6 +96,7 @@ type StateDigest struct {
 func (m *Manager) GetStateDigest() StateDigest {
 	return StateDigest{
 		m.parser.LineCount,
+		m.sphinx.DayQueries,
 		m.id.ArangoCalls,
 		m.sphinx.BufferedLines,
 		m.sphinx.InsertedLines,

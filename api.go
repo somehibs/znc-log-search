@@ -21,18 +21,26 @@ type ApiState interface {
 	ApiState() interface{}
 }
 
-func InitApi(stateHandler http.Handler) *Api {
+// New creates an http listener from a map of URLs to handlers.
+// Depending on configuration, it may also register a prometheus handler.
+func NewApi(handlers map[string]http.Handler) *Api {
 	a := Api{}
-	a.Init(&stateHandler)
-	return &a
-}
 
-func (a *Api) Init(stateHandler *http.Handler) {
+	for k, v := range handlers {
+		http.Handle("/"+k, v)
+	}
+	// unwritten debug mode
+	//http.Handle("/debug", a.gopsAgent())
 	if GetConf().Prometheus != false {
 		// Register prometheus' handler.
 		http.Handle("/metrics", promhttp.Handler())
 	}
-	// Register an HTTP handler that also provides an API to query the state of various internal queues
-	http.Handle("/state", *stateHandler)
-	go http.ListenAndServe("127.0.0.1:9991", nil)
+	return &a
+}
+
+// Listen calls ListenAndServe on http with either configuration or an override url
+func (a *Api) Listen() {
+	if GetConf().ApiUrl != "" {
+		go http.ListenAndServe(GetConf().ApiUrl, nil)
+	}
 }

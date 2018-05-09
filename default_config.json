@@ -1,13 +1,11 @@
 {
-	"daily": false,
-	"defaultpermission": 9999,
+	"ApiUrl": "127.0.0.1:9991",
 	"prometheus": false,
-	"whitelist": [],
+	"network": "mynetwork",
 	"queues": {
 		"file": 100,
 		"line": 5000,
 		"id": 5000,
 		"sphinx": 5000
-	},
-	"network": "mynetwork"
+	}
 }

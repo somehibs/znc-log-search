@@ -14,6 +14,7 @@ type SphinxFeed struct {
 	Db *sql.DB
 	BufferedLines int64
 	InsertedLines int64
+	DayQueries int64
 	index int64
 	value []string
 	valueData []interface{}
@@ -23,7 +24,7 @@ func (f *SphinxFeed) InsertSphinxForever() {
 	f.index = f.GetMaxId()+1
 	for {
 		f.BufferOne(<-f.In)
-		if (GetConf().Daily && len(f.In) > 0) || len(f.value) < 1000 {
+		if (GetConf().Indexer.Daily && len(f.In) > 0) || len(f.value) < 1000 {
 			continue
 		}
 		f.Insert()
@@ -60,6 +61,7 @@ func (f *SphinxFeed) GetMaxId() (r int64) {
 	if e != nil {
 		panic(fmt.Sprintf("%s", e))
 	}
+	defer cur.Close()
 	if cur.Next() {
 		var max int64
 		e = cur.Scan(&max)
@@ -81,8 +83,10 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	if e != nil {
 		panic(fmt.Sprintf("Could not query chan indexes %s", e))
 	}
+	defer cur.Close()
 	//fmt.Printf("Max: %s Min: %s\n", max, day)
 	m := make([]ChanIndex, 0)
+	f.DayQueries += 1
 	for ;cur.Next(); {
 		var channel, user, index int64
 		e = cur.Scan(&index, &channel, &user)
@@ -139,14 +143,14 @@ func (f *SphinxFeed) BufferOne(l IdLine) {
 func permissionFor(channel string) int {
 	// Based on the permission matrix, insert a permission.
 	// If there isn't a permission, insert it as max permission
-	for k, v := range GetConf().Permissions {
+	for k, v := range GetConf().Indexer.Permissions {
 		for _, c := range v {
 			if (c == channel) {
 				return k
 			}
 		}
 	}
-	return GetConf().DefaultPermission
+	return GetConf().Indexer.DefaultPermission
 }
 
 func (f *SphinxFeed) Connect() error {
