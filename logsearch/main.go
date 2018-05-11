@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/somehibs/znc-log-search"
+	"github.com/somehibs/znc-log-search/logs"
 )
 
 var feed *logs.SphinxFeed
