@@ -69,7 +69,6 @@ func (fc *FileCollector) GetLogsBackwards() error {
 		fc.GetLogsForDay(fc.Out, fc.now)
 		fc.now = fc.now.Add(-time.Hour * 24)
 	}
-	return nil
 }
 
 func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
