@@ -6,11 +6,11 @@ import (
 
 type Watchdog struct {
 	interval time.Duration
-	timer *time.Timer
+	timer    *time.Timer
 }
 
 func New(interval time.Duration, callback func()) *Watchdog {
-	w := Watchdog {
+	w := Watchdog{
 		interval,
 		time.AfterFunc(interval, callback),
 	}

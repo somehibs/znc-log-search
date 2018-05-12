@@ -1,9 +1,9 @@
 package logs
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -16,25 +16,25 @@ var users = "Users"
 var nicks = "Nicks"
 
 type IdLine struct {
-	Line *Line
-	NickId int64
+	Line      *Line
+	NickId    int64
 	ChannelId int64
-	UserId int64
+	UserId    int64
 }
 
 type IdFeed struct {
-	In chan Line
-	Out chan IdLine
+	In           chan Line
+	Out          chan IdLine
 	LastLineTime *time.Time
-	ArangoCalls int64
-	nicks map[string]int64
-	chans map[string]int64
-	users map[string]int64
-	nickLen int64
-	chanLen int64
-	userLen int64
-	c arango.Client
-	db arango.Database
+	ArangoCalls  int64
+	nicks        map[string]int64
+	chans        map[string]int64
+	users        map[string]int64
+	nickLen      int64
+	chanLen      int64
+	userLen      int64
+	c            arango.Client
+	db           arango.Database
 }
 
 func (f *IdFeed) InitChan() {
@@ -52,7 +52,7 @@ func (f *IdFeed) InitLens() {
 
 type ArangoLen struct {
 	Value int64
-	Len bool
+	Len   bool
 }
 
 type ArangoItem struct {
@@ -60,7 +60,7 @@ type ArangoItem struct {
 }
 
 func (f *IdFeed) GetLen(collection string) (length int64) {
-	cur, e := f.db.Query(nil, "FOR x IN " + collection + " FILTER x._key == \"0\" RETURN x", nil)
+	cur, e := f.db.Query(nil, "FOR x IN "+collection+" FILTER x._key == \"0\" RETURN x", nil)
 	if e != nil {
 		panic(fmt.Sprintf("error querying len %s because %s", collection, e))
 	}
@@ -68,7 +68,7 @@ func (f *IdFeed) GetLen(collection string) (length int64) {
 	_, e = cur.ReadDocument(nil, &doc)
 	if e != nil || doc.Value == 0 {
 		fmt.Printf("\n\nNo len for collection %s!\n\n", collection)
-		m, e := f.UpsertNow(collection, map[string]string{"_key":"0"}, map[string]string{"_key":"0", "Value":"1"}, map[string]string{})
+		m, e := f.UpsertNow(collection, map[string]string{"_key": "0"}, map[string]string{"_key": "0", "Value": "1"}, map[string]string{})
 		if e != nil {
 			panic(fmt.Sprintf("db failed to create len %s", e))
 		}
@@ -80,9 +80,9 @@ func (f *IdFeed) GetLen(collection string) (length int64) {
 }
 
 func (f *IdFeed) QueryIdsForever() {
-	for ;; {
+	for {
 		f.InitLens()
-		for ;; {
+		for {
 			f.Out <- f.QueryId(<-f.In)
 		}
 	}
@@ -172,11 +172,11 @@ func (f *IdFeed) UpsertNow(collection string, query, insert, update map[string]s
 
 func (f *IdFeed) Get(collection, value string) int64 {
 	length := &f.chanLen
-	if (collection == nicks) {
+	if collection == nicks {
 		length = &f.nickLen
-	} else if (collection == users) {
+	} else if collection == users {
 		length = &f.userLen
-	} else if (collection != channels) {
+	} else if collection != channels {
 		panic("Don't know this collection")
 	}
 	if *length == 0 {
@@ -184,9 +184,9 @@ func (f *IdFeed) Get(collection, value string) int64 {
 	}
 
 	query := Upsert(collection,
-									map[string]string{"value": value},
-									map[string]string{"_key": fmt.Sprintf("%d", *length), "value": value},
-									map[string]string{})
+		map[string]string{"value": value},
+		map[string]string{"_key": fmt.Sprintf("%d", *length), "value": value},
+		map[string]string{})
 	cur, e := f.db.Query(nil, query, nil)
 	f.ArangoCalls += 1
 	if e != nil {
@@ -209,7 +209,7 @@ func (f *IdFeed) Get(collection, value string) int64 {
 		}
 		if ret == *length {
 			// Key changed!
-			*length = (*length)+1
+			*length = (*length) + 1
 			f.SaveLen(collection, *length)
 		}
 		cache := &f.nicks

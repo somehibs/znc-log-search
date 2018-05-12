@@ -1,18 +1,18 @@
 package logs
 
 import (
-	"fmt"
-	"time"
-	"net/http"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"time"
 )
 
 type Manager struct {
-	api *Api
+	api       *Api
 	collector FileCollector
-	parser LineParser
-	id IdFeed
-	sphinx SphinxFeed
+	parser    LineParser
+	id        IdFeed
+	sphinx    SphinxFeed
 }
 
 type StateHandler struct {
@@ -32,8 +32,8 @@ func (m *Manager) WaitUntilCompletion() {
 	fmt.Println("collector complete. waiting for queues to empty.")
 	for {
 		if len(m.parser.Out) > 0 ||
-			 len(m.id.Out) > 0 {
-				 time.Sleep(3*time.Second)
+			len(m.id.Out) > 0 {
+			time.Sleep(3 * time.Second)
 		} else {
 			fmt.Println("Queues complete.")
 		}
@@ -77,20 +77,20 @@ func (m *Manager) Init() {
 
 func (s StateHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	// Ignore the request, return a string as the response
-	writer.Header()["Content-Type"] = []string {"application/json"}
+	writer.Header()["Content-Type"] = []string{"application/json"}
 	writer.Write([]byte(s.m.getState()))
 }
 
 type StateDigest struct {
-	ProcessedLines int64
+	ProcessedLines    int64
 	SphinxLengthQuery int64
-	ArangoCalls int64
-	BufferedSphinx int64
-	InsertedSphinx int64
-	LastLineTime *time.Time
-	FileQueue int
-	LineQueue int
-	IdQueue int
+	ArangoCalls       int64
+	BufferedSphinx    int64
+	InsertedSphinx    int64
+	LastLineTime      *time.Time
+	FileQueue         int
+	LineQueue         int
+	IdQueue           int
 }
 
 func (m *Manager) GetStateDigest() StateDigest {
@@ -113,5 +113,5 @@ func (m *Manager) getState() string {
 	if e != nil {
 		panic("Fuck")
 	}
-	return string(state)+"\r\n"
+	return string(state) + "\r\n"
 }

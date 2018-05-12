@@ -6,22 +6,22 @@ import (
 	"time"
 
 	"database/sql"
-	_"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type SphinxFeed struct {
-	In chan IdLine
-	Db *sql.DB
+	In            chan IdLine
+	Db            *sql.DB
 	BufferedLines int64
 	InsertedLines int64
-	DayQueries int64
-	index int64
-	value []string
-	valueData []interface{}
+	DayQueries    int64
+	index         int64
+	value         []string
+	valueData     []interface{}
 }
 
 func (f *SphinxFeed) InsertSphinxForever() {
-	f.index = f.GetMaxId()+1
+	f.index = f.GetMaxId() + 1
 	for {
 		f.BufferOne(<-f.In)
 		if (GetConf().Indexer.Daily && len(f.In) > 0) || len(f.value) < 1000 {
@@ -42,10 +42,10 @@ type ChanIndex struct {
 	Index int64
 
 	Channel string
-	User string
+	User    string
 
 	ChannelId int64
-	UserId int64
+	UserId    int64
 }
 
 func ToMap(ind []ChanIndex) map[string]ChanIndex {
@@ -75,8 +75,8 @@ func (f *SphinxFeed) GetMaxId() (r int64) {
 
 func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
-	max := day.Add(24*time.Hour)
-	max = max.Add(-1*time.Second)
+	max := day.Add(24 * time.Hour)
+	max = max.Add(-1 * time.Second)
 	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 9999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
 	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
@@ -87,14 +87,14 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	//fmt.Printf("Max: %s Min: %s\n", max, day)
 	m := make([]ChanIndex, 0)
 	f.DayQueries += 1
-	for ;cur.Next(); {
+	for cur.Next() {
 		var channel, user, index int64
 		e = cur.Scan(&index, &channel, &user)
-	//	mapKey := fmt.Sprintf("%d%d", channel, user)
-	//	if chanMap[mapKey] > index {
-	//		// Supersceded by another channel entry
-	//		continue
-	//	}
+		//	mapKey := fmt.Sprintf("%d%d", channel, user)
+		//	if chanMap[mapKey] > index {
+		//		// Supersceded by another channel entry
+		//		continue
+		//	}
 		m = append(m, ChanIndex{Index: index, UserId: user, ChannelId: channel})
 		if e != nil {
 			panic(fmt.Sprintf("Could not scan row %s", e))
@@ -145,7 +145,7 @@ func permissionFor(channel string) int {
 	// If there isn't a permission, insert it as max permission
 	for k, v := range GetConf().Indexer.Permissions {
 		for _, c := range v {
-			if (c == channel) {
+			if c == channel {
 				return k
 			}
 		}

@@ -2,32 +2,33 @@ package logs
 
 import (
 	"fmt"
-	"time"
-	"os/user"
 	"os"
-	"strings"
+	"os/user"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 type FileCollector struct {
-	now time.Time
-	Out chan Logfile
-	Done chan int
-	sphinx *SphinxFeed
-	id *IdFeed
+	now     time.Time
+	Out     chan Logfile
+	Done    chan int
+	sphinx  *SphinxFeed
+	id      *IdFeed
 	indexes map[string]ChanIndex
 }
 
 type Logfile struct {
-	Path string
-	User string
-	Channel string
-	Size int64
-	Time time.Time
+	Path       string
+	User       string
+	Channel    string
+	Size       int64
+	Time       time.Time
 	StartIndex int64
 }
 
 var zncPath = ""
+
 func checkPath() error {
 	if zncPath != "" {
 		return nil
@@ -59,14 +60,14 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
 	fc.now = time.Date(2016, 6, 20, 0, 0, 0, 0, time.UTC)
-	for ;; {
-		if fc.now.Before(end) {//|| fc.now == today {
+	for {
+		if fc.now.Before(end) { //|| fc.now == today {
 			fc.Out <- Logfile{}
 			fc.Done <- 0
 			return nil
 		}
 		fc.GetLogsForDay(fc.Out, fc.now)
-		fc.now = fc.now.Add(-time.Hour*24)
+		fc.now = fc.now.Add(-time.Hour * 24)
 	}
 	return nil
 }
@@ -74,15 +75,15 @@ func (fc *FileCollector) GetLogsBackwards() error {
 func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
 	for {
 		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 		for {
 			if len(file) > 0 || len(id) > 0 || len(fc.Out) > 0 {
-				time.Sleep(2*time.Second)
+				time.Sleep(2 * time.Second)
 			} else {
 				break
 			}
 		}
-		time.Sleep(60*time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
 
@@ -112,7 +113,7 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 	uid := fmt.Sprintf("%s%s", user, channel)
 	index := fc.indexes[uid]
 	if index.Channel != "" {
-		knownOffset = index.Index+1
+		knownOffset = index.Index + 1
 		//fmt.Printf("known offset %s on %+v\n", channel, index)
 	} else {
 		//fmt.Printf("Couldn't find index %s on %+v\n", uid, index)

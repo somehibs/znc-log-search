@@ -28,8 +28,8 @@ func ExhaustChan(c chan logs.IdLine) {
 		line := <-c
 		fmt.Printf("Last: %+v\n", line)
 		panic("")
-		time.Sleep(3*time.Second)
-		if lines % 1000 == 0 {
+		time.Sleep(3 * time.Second)
+		if lines%1000 == 0 {
 			fmt.Printf("Lines: %d Last: %+v\n", lines, line)
 		}
 	}
