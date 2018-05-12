@@ -1,5 +1,5 @@
-# znc-log-search
-golang + arangodb + sphinx search = znc log search engine
+# znc-log-search [![Go Report Card](https://goreportcard.com/badge/github.com/somehibs/znc-log-search)](https://goreportcard.com/report/github.com/somehibs/znc-log-search)
+golang + arangodb + sphinx search = znc log search engine 
 
 this log search engine was originally written in python with rabbitmq and 3 python instances for 'performance'.
 it was a total mess, and this isn't much better.
