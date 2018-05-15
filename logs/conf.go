@@ -6,7 +6,7 @@ import (
 	"github.com/micro/go-config"
 	"github.com/micro/go-config/source/envvar"
 	"github.com/micro/go-config/source/file"
-	"github.com/micro/go-config/source/flag"
+	_"github.com/micro/go-config/source/flag"
 )
 
 type SphinxConfig struct {
@@ -28,8 +28,10 @@ type IndexerConfig struct {
 }
 
 type LogsConfig struct {
+	LogDir	   string
 	ApiUrl     string
 	Prometheus bool
+	Debug	   bool
 	Network    string
 	Queues     map[string]int
 	Sphinx     SphinxConfig
@@ -38,6 +40,7 @@ type LogsConfig struct {
 }
 
 var cachedFile = ""
+var ctag = "CONF"
 var cache = LogsConfig{Network: "_not_a_real_network_probably"}
 
 func GetConf() LogsConfig {
@@ -52,7 +55,7 @@ func GetConfByName(filename string) LogsConfig {
 
 	e := conf.Load(file.NewSource(file.WithPath("./default_config.json")),
 		envvar.NewSource(),
-		flag.NewSource(),
+		//flag.NewSource(),
 		file.NewSource(file.WithPath(filename)))
 
 	if e != nil {
@@ -63,10 +66,12 @@ func GetConfByName(filename string) LogsConfig {
 	fmt.Println("Loading config...")
 	g := conf.Get()
 	g.Scan(&confObj)
-	//panic(fmt.Sprintf("%+v\n",confObj))
 	fmt.Println("Config loaded!")
 
 	cachedFile = filename
 	cache = confObj
+
+	Debug(ctag, fmt.Sprintf("Config: %+v", confObj))
+
 	return confObj
 }

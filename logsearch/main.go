@@ -23,12 +23,12 @@ func ExhaustChan(c chan logs.IdLine) {
 	lines := 0
 	for {
 		lines += 1
-		fmt.Printf("pending\n")
+		logs.Debug("main", "Waiting for line\n")
 		line := <-c
-		fmt.Printf("Last: %+v\n", line)
+		logs.Debug("main", fmt.Sprintf("Last: %+v\n", line))
 		time.Sleep(3 * time.Second)
 		if lines%1000 == 0 {
-			fmt.Printf("Lines: %d Last: %+v\n", lines, line)
+			logs.Debug("main", fmt.Sprintf("Lines: %d Last: %+v\n", lines, line))
 		}
 	}
 }

@@ -20,13 +20,23 @@ type SphinxFeed struct {
 	valueData     []interface{}
 }
 
+var stag = "SPHINX"
+
 func (f *SphinxFeed) InsertSphinxForever() {
 	f.index = f.GetMaxId() + 1
 	for {
 		f.BufferOne(<-f.In)
-		if (GetConf().Indexer.Daily && len(f.In) > 0) || len(f.value) < 1000 {
+		inLen := len(f.In)
+		if GetConf().Indexer.Daily {
+			if inLen != 0 {
+				Debug(stag, "Daily stag not inserting, more lines left.")
+				continue
+			}
+		} else if len(f.value) < 1000 {
+			Debug(stag, fmt.Sprintf("Not inserting because buffer is only %d", len(f.value)))
 			continue
 		}
+		Debug(stag, fmt.Sprintf("Inserting %d entries.", len(f.value)))
 		f.Insert()
 	}
 }
@@ -125,6 +135,7 @@ func (f *SphinxFeed) Insert() {
 
 func (f *SphinxFeed) BufferOne(l IdLine) {
 	// Buffer this line into the query string.
+	Debug(stag, fmt.Sprintf("New line %+v", l.Line))
 	f.BufferedLines += 1
 	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	f.valueData = append(f.valueData, f.index)

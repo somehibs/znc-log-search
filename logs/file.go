@@ -10,11 +10,12 @@ import (
 )
 
 type FileCollector struct {
-	now     time.Time
-	Out     chan Logfile
-	Done    chan int
-	sphinx  *SphinxFeed
-	id      *IdFeed
+	now      time.Time
+	Out      chan Logfile
+	Done     chan int
+	LastTime *time.Time
+	sphinx   *SphinxFeed
+	id       *IdFeed
 	indexes map[string]ChanIndex
 }
 
@@ -28,6 +29,7 @@ type Logfile struct {
 }
 
 var zncPath = ""
+var ftag = "FILE"
 
 func checkPath() error {
 	if zncPath != "" {
@@ -37,7 +39,11 @@ func checkPath() error {
 	if e != nil {
 		return e
 	}
-	zncPath = fmt.Sprintf("/home/%s/.znc/users/*/networks/%s/moddata/log/%%s/%%s.log", u.Username, GetConf().Network)
+	prefix := fmt.Sprintf("/home/%s", u.Username)
+	if GetConf().LogDir != "" {
+		prefix = GetConf().LogDir
+	}
+	zncPath = fmt.Sprintf("%s/.znc/users/*/networks/%s/moddata/log/%%s/%%s.log", prefix, GetConf().Network)
 	return nil
 }
 
@@ -59,14 +65,16 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
-	fc.now = time.Date(2016, 6, 20, 0, 0, 0, 0, time.UTC)
 	for {
 		if fc.now.Before(end) { //|| fc.now == today {
 			fc.Out <- Logfile{}
 			fc.Done <- 0
 			return nil
 		}
-		fc.GetLogsForDay(fc.Out, fc.now)
+		e := fc.GetLogsForDay(fc.Out, fc.now)
+		if e != nil {
+			panic(e)
+		}
 		fc.now = fc.now.Add(-time.Hour * 24)
 	}
 }
@@ -144,11 +152,15 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 
 func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneChan string) error {
 	checkPath()
+	fc.LastTime = &day
 	chanData := fc.sphinx.GetMaxChanIndexes(&day)
 	chanData = fc.id.GetChannels(chanData)
 	fc.indexes = ToMap(chanData)
+	Debug(ftag, fmt.Sprintf("Chan index size: %d", len(fc.indexes)))
 	path := fmt.Sprintf(zncPath, oneChan, day.String()[:10])
 	match, e := filepath.Glob(path)
+	Debug(ftag, fmt.Sprintf("%+v", path))
+	Debug(ftag, fmt.Sprintf("Files: %d", len(match)))
 	if e != nil {
 		return e
 	}
@@ -199,7 +211,7 @@ func Whitelist(channel string) bool {
 	ok := whitelist[channel]
 	if ok == false && channel[0] == '#' && notified[channel] == false {
 		notified[channel] = true
-		//fmt.Println("Ignoring " + channel)
+		fmt.Println("Ignoring " + channel)
 	}
 	return ok
 }

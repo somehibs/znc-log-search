@@ -82,6 +82,7 @@ func (s StateHandler) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 }
 
 type StateDigest struct {
+	LastFileTime	  *time.Time
 	ProcessedLines    int64
 	SphinxLengthQuery int64
 	ArangoCalls       int64
@@ -95,6 +96,7 @@ type StateDigest struct {
 
 func (m *Manager) GetStateDigest() StateDigest {
 	return StateDigest{
+		m.collector.LastTime,
 		m.parser.LineCount,
 		m.sphinx.DayQueries,
 		m.id.ArangoCalls,

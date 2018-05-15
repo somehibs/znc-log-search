@@ -34,18 +34,19 @@ type Line struct {
 var IRCTIME = `[0-9]{2}:[0-9]{2}:[0-9]{2}`
 var IRCNICK = `[\.a-zA-Z0-9_\-\\\[\]\{\}\^\'\|\x60~]+`
 var GREEDY = `.*`
+var ltag = "LINE"
 
 // Skip joins and parts
 var skiplist []*regexp.Regexp = []*regexp.Regexp{
-	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] \*\*\* \w+: (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
+	regexp.MustCompile(fmt.Sprintf(`^\[(?P<time>%s)\] \*\*\* \w+: (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
 }
 
 // Pick up messages, mode changes, nick changes and notices
 var re []*regexp.Regexp = []*regexp.Regexp{
-	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] -(?P<nick>%s)- (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
-	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] \* (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
-	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] \*\*\* (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
-	regexp.MustCompile(fmt.Sprintf(`\[(?P<time>%s)\] <(?P<nick>%s)> (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
+	regexp.MustCompile(fmt.Sprintf(`^\[(?P<time>%s)\] -(?P<nick>%s)- (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
+	regexp.MustCompile(fmt.Sprintf(`^\[(?P<time>%s)\] \* (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
+	regexp.MustCompile(fmt.Sprintf(`^\[(?P<time>%s)\] \*\*\* (?P<nick>%s) (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
+	regexp.MustCompile(fmt.Sprintf(`^\[(?P<time>%s)\] <(?P<nick>%s)> (?P<msg>%s)`, IRCTIME, IRCNICK, GREEDY)),
 }
 
 var akaIndex = 2
@@ -63,11 +64,10 @@ func (p *LineParser) ParseLinesForever() {
 }
 
 func (p *LineParser) ParseLinesForFile(file Logfile) {
-	//fmt.Printf("hi: %s\n", file)
 	// Open the file.
 	f, e := os.Open(file.Path)
 	if e != nil {
-		fmt.Printf("Failed to open file %s (Err: %s)\n", file.Path, e)
+		panic(fmt.Sprintf("Failed to open file %s (Err: %s)\n", file.Path, e))
 	}
 	// Seek line by line, starting from lastLine.
 	_, e = f.Seek(file.StartIndex, 0)
@@ -94,7 +94,6 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 			result = &buffer[lc]
 		}
 		e := p.ParseLine(&file, &line, index, result)
-		//fmt.Printf("line: %+v\nlen: %s\n", result, len(line))
 		if e == nil {
 			p.Out <- *result
 			lc += int64(1)
@@ -103,7 +102,7 @@ func (p *LineParser) ParseLinesForFile(file Logfile) {
 		index += int64(len(line))
 	}
 	if e != nil && e != io.EOF {
-		fmt.Println("Error: " + e.Error())
+		Log(ltag, "Error: " + e.Error())
 		panic("Unexpected error")
 	}
 }

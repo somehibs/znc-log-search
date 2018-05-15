@@ -1,4 +1,5 @@
 {
+	"debug": false,
 	"ApiUrl": "127.0.0.1:9991",
 	"prometheus": false,
 	"network": "mynetwork",
