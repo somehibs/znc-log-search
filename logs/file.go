@@ -14,6 +14,7 @@ type FileCollector struct {
 	Out      chan Logfile
 	Done     chan int
 	LastTime *time.Time
+	Asleep	 bool
 	sphinx   *SphinxFeed
 	id       *IdFeed
 	indexes map[string]ChanIndex
@@ -81,7 +82,9 @@ func (fc *FileCollector) GetLogsBackwards() error {
 
 func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error {
 	for {
+		fc.Asleep = false
 		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
+		fc.Asleep = true
 		time.Sleep(2 * time.Second)
 		for {
 			if len(file) > 0 || len(id) > 0 || len(fc.Out) > 0 {
