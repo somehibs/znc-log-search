@@ -4,7 +4,7 @@
 	"prometheus": false,
 	"network": "mynetwork",
 	"queues": {
-		"file": 100,
+		"file": 200,
 		"line": 5000,
 		"id": 5000,
 		"sphinx": 5000

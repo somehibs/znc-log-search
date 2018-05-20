@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -33,18 +34,22 @@ var zncPath = ""
 var ftag = "FILE"
 
 func checkPath() error {
-	if zncPath != "" {
-		return nil
-	}
 	u, e := user.Current()
 	if e != nil {
 		return e
 	}
+	// Default behaviour pulls znc logs from the current user
 	prefix := fmt.Sprintf("/home/%s", u.Username)
 	if GetConf().LogDir != "" {
 		prefix = GetConf().LogDir
 	}
-	zncPath = fmt.Sprintf("%s/.znc/users/*/networks/%s/moddata/log/%%s/%%s.log", prefix, GetConf().Network)
+	userRoot := fmt.Sprintf("%s/.znc/users/", prefix)
+	cmd := exec.Command("chmod", "-R", userRoot, "077")
+	cmd.Run()
+	zncPath = fmt.Sprintf("%s*/networks/%s/moddata/log/%%s/%%s.log", userRoot, GetConf().Network)
+	if zncPath != "" {
+		return nil
+	}
 	return nil
 }
 
@@ -66,6 +71,7 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
+	//fc.now = time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
 	for {
 		if fc.now.Before(end) { //|| fc.now == today {
 			fc.Out <- Logfile{}
@@ -123,6 +129,7 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 	uid := fmt.Sprintf("%s%s", user, channel)
 	index := fc.indexes[uid]
 	if index.Channel != "" {
+		//Debug(ftag, fmt.Sprintf("Hi, I found an offset for channel: %s on day %s with index %+v\n", channel, day, index))
 		knownOffset = index.Index + 1
 		//fmt.Printf("known offset %s on %+v\n", channel, index)
 	} else {
@@ -182,9 +189,19 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 		if Whitelist(l.Channel) == false {
 			continue
 		}
-		if sizes[lp.Channel] == nil || (sizes[lp.Channel].Size < l.Size && l.StartIndex >= sizes[lp.Channel].StartIndex) {
+		if sizes[lp.Channel] == nil {
+			//Debug(ftag, fmt.Sprintf("No existing size for: %+v\n", l))
 			sizes[lp.Channel] = l
 		}
+		if l.StartIndex > sizes[lp.Channel].StartIndex {
+			Debug(ftag, fmt.Sprintf("My start index %s is superior %s\n", l, sizes[lp.Channel]))
+			sizes[lp.Channel] = l
+		}
+		if sizes[lp.Channel].Size < l.Size && sizes[lp.Channel].StartIndex == 0 {
+			Debug(ftag, fmt.Sprintf("My size %s is bigger than %s\n", l, sizes[lp.Channel]))
+			sizes[lp.Channel] = l
+		}
+
 		appended += 1
 	}
 	//fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)
@@ -215,6 +232,7 @@ func Whitelist(channel string) bool {
 	if ok == false && channel[0] == '#' && notified[channel] == false {
 		notified[channel] = true
 		fmt.Println("Ignoring " + channel)
+		time.Sleep(3*time.Second)
 	}
 	return ok
 }

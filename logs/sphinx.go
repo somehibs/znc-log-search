@@ -29,11 +29,9 @@ func (f *SphinxFeed) InsertSphinxForever() {
 		inLen := len(f.In)
 		if GetConf().Indexer.Daily {
 			if inLen != 0 {
-				Debug(stag, "Daily stag not inserting, more lines left.")
 				continue
 			}
 		} else if len(f.value) < 1000 {
-			Debug(stag, fmt.Sprintf("Not inserting because buffer is only %d", len(f.value)))
 			continue
 		}
 		Debug(stag, fmt.Sprintf("Inserting %d entries.", len(f.value)))
@@ -87,7 +85,7 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
 	max := day.Add(24 * time.Hour)
 	max = max.Add(-1 * time.Second)
-	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 9999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id ORDER BY line_index DESC LIMIT 9999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
 	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {
@@ -135,7 +133,7 @@ func (f *SphinxFeed) Insert() {
 
 func (f *SphinxFeed) BufferOne(l IdLine) {
 	// Buffer this line into the query string.
-	Debug(stag, fmt.Sprintf("New line %+v", l.Line))
+	//Debug(stag, fmt.Sprintf("New line %+v", l.Line))
 	f.BufferedLines += 1
 	f.value = append(f.value, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	f.valueData = append(f.valueData, f.index)
