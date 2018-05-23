@@ -194,7 +194,7 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 			sizes[lp.Channel] = l
 		}
 		if l.StartIndex > sizes[lp.Channel].StartIndex {
-			Debug(ftag, fmt.Sprintf("My start index %s is superior %s\n", l, sizes[lp.Channel]))
+			//Debug(ftag, fmt.Sprintf("My start index %s is superior %s\n", l, sizes[lp.Channel]))
 			sizes[lp.Channel] = l
 		}
 		if sizes[lp.Channel].Size < l.Size && sizes[lp.Channel].StartIndex == 0 {
@@ -232,7 +232,6 @@ func Whitelist(channel string) bool {
 	if ok == false && channel[0] == '#' && notified[channel] == false {
 		notified[channel] = true
 		fmt.Println("Ignoring " + channel)
-		time.Sleep(3*time.Second)
 	}
 	return ok
 }
