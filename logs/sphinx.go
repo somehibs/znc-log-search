@@ -29,7 +29,7 @@ func (f *SphinxFeed) InsertSphinxForever() {
 		inLen := len(f.In)
 		if GetConf().Indexer.Daily {
 			if inLen != 0 {
-				Debug(stag, "Daily stag not inserting, more lines left.")
+				//Debug(stag, "Daily stag not inserting, more lines left.")
 				continue
 			}
 		} else if len(f.value) < 1000 {
@@ -62,6 +62,7 @@ func ToMap(ind []ChanIndex) map[string]ChanIndex {
 	ret := map[string]ChanIndex{}
 	for _, v := range ind {
 		ret[fmt.Sprintf("%s%s", v.User, v.Channel)] = v
+		Debug(stag, fmt.Sprintf("%s %s - %d n", v.Channel, v.User, v.Index))
 	}
 	return ret
 }
@@ -87,7 +88,7 @@ func (f *SphinxFeed) GetMaxChanIndexes(day *time.Time) []ChanIndex {
 	// Clamp the day to the end of the day, add 24 hours and take a second off
 	max := day.Add(24 * time.Hour)
 	max = max.Add(-1 * time.Second)
-	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id LIMIT 9999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
+	query := fmt.Sprintf("SELECT MAX(line_index) as li, channel_id, user_id FROM irc_msg WHERE timestamp >= %d AND timestamp <= %d GROUP BY channel_id, user_id LIMIT 99999 option max_matches=%d", day.Unix(), max.Unix(), 100000)
 	//fmt.Printf("%s\n", query)
 	cur, e := f.Db.Query(query)
 	if e != nil {

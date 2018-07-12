@@ -93,7 +93,7 @@ func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error 
 				break
 			}
 		}
-		time.Sleep(60 * time.Second)
+		time.Sleep(90 * time.Second)
 	}
 }
 
@@ -158,7 +158,9 @@ func (fc *FileCollector) GetLogsForChan(reply chan Logfile, day time.Time, oneCh
 	fc.LastTime = &day
 	chanData := fc.sphinx.GetMaxChanIndexes(&day)
 	chanData = fc.id.GetChannels(chanData)
+	//Debug(ftag, fmt.Sprintf("Found channels: %s", chanData))
 	fc.indexes = ToMap(chanData)
+	//Debug(ftag, fmt.Sprintf("Found channel map: %s", fc.indexes))
 	Debug(ftag, fmt.Sprintf("Chan index size: %d", len(fc.indexes)))
 	path := fmt.Sprintf(zncPath, oneChan, day.String()[:10])
 	match, e := filepath.Glob(path)
@@ -182,8 +184,15 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 		if Whitelist(l.Channel) == false {
 			continue
 		}
-		if sizes[lp.Channel] == nil || (sizes[lp.Channel].Size < l.Size && l.StartIndex >= sizes[lp.Channel].StartIndex) {
+		if sizes[lp.Channel] == nil {
+			Debug(ftag, fmt.Sprintf("New channel: %s", l))
 			sizes[lp.Channel] = l
+		}
+		if sizes[lp.Channel].Size < l.Size && l.StartIndex >= sizes[lp.Channel].StartIndex {
+			Debug(ftag, fmt.Sprintf("Overriding channel: %s with %s", sizes[lp.Channel], l))
+			sizes[lp.Channel] = l
+		} else {
+			Debug(ftag, fmt.Sprintf("Channel %s lost to %s", l, sizes[lp.Channel]))
 		}
 		appended += 1
 	}
