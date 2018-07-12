@@ -90,6 +90,10 @@ func (fc *FileCollector) DailyLogsForever(file chan Line, id chan IdLine) error 
 	for {
 		fc.Asleep = false
 		fc.GetLogsForDay(fc.Out, StartOfDay(time.Now()))
+		if GetConf().Indexer.Once {
+			fc.Done <- 0
+			return nil
+		}
 		fc.Asleep = true
 		time.Sleep(2 * time.Second)
 		for {
