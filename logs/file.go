@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -33,18 +34,22 @@ var zncPath = ""
 var ftag = "FILE"
 
 func checkPath() error {
-	if zncPath != "" {
-		return nil
-	}
 	u, e := user.Current()
 	if e != nil {
 		return e
 	}
+	// Default behaviour pulls znc logs from the current user
 	prefix := fmt.Sprintf("/home/%s", u.Username)
 	if GetConf().LogDir != "" {
 		prefix = GetConf().LogDir
 	}
-	zncPath = fmt.Sprintf("%s/.znc/users/*/networks/%s/moddata/log/%%s/%%s.log", prefix, GetConf().Network)
+	userRoot := fmt.Sprintf("%s/.znc/users/", prefix)
+	cmd := exec.Command("chmod", "-R", userRoot, "077")
+	cmd.Run()
+	zncPath = fmt.Sprintf("%s*/networks/%s/moddata/log/%%s/%%s.log", userRoot, GetConf().Network)
+	if zncPath != "" {
+		return nil
+	}
 	return nil
 }
 
@@ -66,6 +71,7 @@ func (fc *FileCollector) GetLogsBackwards() error {
 	today := StartOfDay(time.Now())
 	end := time.Date(2015, 9, 23, 0, 0, 0, 0, time.UTC)
 	fc.now = today
+	//fc.now = time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
 	for {
 		if fc.now.Before(end) { //|| fc.now == today {
 			fc.Out <- Logfile{}
@@ -123,6 +129,7 @@ func (fc *FileCollector) LogfilePathExist(match string, day *time.Time, exist *L
 	uid := fmt.Sprintf("%s%s", user, channel)
 	index := fc.indexes[uid]
 	if index.Channel != "" {
+		//Debug(ftag, fmt.Sprintf("Hi, I found an offset for channel: %s on day %s with index %+v\n", channel, day, index))
 		knownOffset = index.Index + 1
 		//fmt.Printf("known offset %s on %+v\n", channel, index)
 	} else {
@@ -188,12 +195,24 @@ func (fc *FileCollector) MergePaths(reply chan Logfile, match []string, day *tim
 			Debug(ftag, fmt.Sprintf("New channel: %s", l))
 			sizes[lp.Channel] = l
 		}
-		if sizes[lp.Channel].Size < l.Size && l.StartIndex >= sizes[lp.Channel].StartIndex {
-			Debug(ftag, fmt.Sprintf("Overriding channel: %s with %s", sizes[lp.Channel], l))
+		if l.StartIndex > sizes[lp.Channel].StartIndex {
+			Debug(ftag, fmt.Sprintf("Yes + %s high start index, overriding channel: %s", l, sizes[lp.Channel]))
 			sizes[lp.Channel] = l
 		} else {
-			Debug(ftag, fmt.Sprintf("Channel %s lost to %s", l, sizes[lp.Channel]))
+			Debug(ftag, fmt.Sprintf("No - %s smaller start index than %s", l, sizes[lp.Channel]))
+			if sizes[lp.Channel].StartIndex != 0 {
+				// start index wins for not over-inserting or over-deleting for a day, manually purge to fix
+				Debug(ftag, fmt.Sprintf("No - %s already exists in db as %s", l, sizes[lp.Channel]))
+				continue
+			}
 		}
+		if sizes[lp.Channel].Size < l.Size {
+			Debug(ftag, fmt.Sprintf("Yes + Channel %s is bigger than %s\n", l, sizes[lp.Channel]))
+			sizes[lp.Channel] = l
+		} else {
+			Debug(ftag, fmt.Sprintf("No - Channel %s smaller than %s", l, sizes[lp.Channel]))
+		}
+
 		appended += 1
 	}
 	//fmt.Printf("Queuing: %d for day %s\n", len(sizes), day)

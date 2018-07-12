@@ -1,1 +1,1 @@
-echo "Build." && go install ./logsearch && echo "Built." && logsearch
+echo "Build." && go install ./logsearch && echo "Built."

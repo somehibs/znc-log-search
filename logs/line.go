@@ -58,6 +58,7 @@ func (p *LineParser) InitChan() {
 func (p *LineParser) ParseLinesForever() {
 	f := <-p.In
 	for f.Channel != "" {
+		//Debug("line", fmt.Sprintf("FILE: %s\n", f))
 		p.ParseLinesForFile(f)
 		f = <-p.In
 	}
