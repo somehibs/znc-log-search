@@ -22,6 +22,7 @@ type ArangoConfig struct {
 
 type IndexerConfig struct {
 	Daily             bool
+	Once		  bool
 	DefaultPermission int
 	Permissions       map[int][]string
 	Whitelist         []string // for whitelisting specific channels

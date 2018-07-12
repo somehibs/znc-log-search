@@ -30,12 +30,14 @@ func NewManager() *Manager {
 func (m *Manager) WaitUntilCompletion() {
 	<-m.collector.Done
 	fmt.Println("collector complete. waiting for queues to empty.")
+	time.Sleep(10 * time.Second)
 	for {
 		if len(m.parser.Out) > 0 ||
 			len(m.id.Out) > 0 {
 			time.Sleep(3 * time.Second)
 		} else {
 			fmt.Println("Queues complete.")
+			break
 		}
 	}
 }
